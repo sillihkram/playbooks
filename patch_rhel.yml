@@ -1,0 +1,5 @@
+---
+- name: upgrade all packages on RHEL
+  yum:
+    name: '*'
+    state: latest
