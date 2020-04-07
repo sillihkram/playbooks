@@ -1,6 +1,7 @@
 ---
 - name: patch system
   become: true
+  hosts: all
   tasks:
   - name: upgrade all packages on RHEL
     yum:
