@@ -1,7 +1,6 @@
 ---
 - name: patch system
   become: true
-  hosts: dschubba
   tasks:
   - name: upgrade all packages on RHEL
     yum:
