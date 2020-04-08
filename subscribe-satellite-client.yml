@@ -3,8 +3,9 @@
   hosts: all
   become: true
   
-- name: Download katello-ca-consumer Package
-  get_url:
+  tasks: yum install vim
+  - name: Download katello-ca-consumer Package
+    get_url:
     url: http://dschubba.openincite.net/pub/katello-ca-consumer-latest.noarch.rpm
     dest: /tmp/katello-ca-consumer-latest.noarch.rpm
     mode: '0775'
