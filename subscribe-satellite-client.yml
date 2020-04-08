@@ -12,5 +12,5 @@
 
   - name: Install package.
      yum:
-      name: /tmp/katello-ca-consumer-latest.noarch.rpm
-      state: present
+     name: /tmp/katello-ca-consumer-latest.noarch.rpm
+     state: present
