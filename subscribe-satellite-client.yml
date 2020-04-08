@@ -1,4 +1,8 @@
 ---
+- name: Playbook to configure IPA clients with username/password
+  hosts: all
+  become: true
+  
 - name: Download katello-ca-consumer Package
   get_url:
     url: http://dschubba.openincite.net/pub/katello-ca-consumer-latest.noarch.rpm
