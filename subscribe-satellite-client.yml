@@ -1,5 +1,5 @@
 ---
-- name: Playbook to configure IPA clients with username/password
+- name: Playbook to configure host as satellite client 
   hosts: all
   become: true
   
