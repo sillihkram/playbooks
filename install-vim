@@ -1,0 +1,10 @@
+---
+- name: Install vim editor 
+  hosts: all
+  become: true
+
+  tasks: yum install vim
+  - name: 
+    yum:
+      name: vim
+      state: latest
