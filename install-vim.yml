@@ -3,8 +3,8 @@
   hosts: all
   become: true
 
-  tasks: yum install vim
-  - name: 
+  tasks: 
+  - name: yum install vim
     yum:
       name: vim
       state: latest
