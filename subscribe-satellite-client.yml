@@ -11,6 +11,6 @@
      mode: '0775'
 
   - name: Install package
-     yum:
-      name: /tmp/katello-ca-consumer-latest.noarch.rpm
-      state: present
+    yum:
+     name: /tmp/katello-ca-consumer-latest.noarch.rpm
+     state: present
