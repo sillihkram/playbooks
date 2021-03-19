@@ -15,7 +15,7 @@
      name: /tmp/katello-ca-consumer-latest.noarch.rpm
      state: present
      
-  - name: Register system and add subscription
+  - name: Register system using activation key
     redhat_subscription:
      activationkey: "RHEL-8-Development"
      org_id: "Default_Organization"
