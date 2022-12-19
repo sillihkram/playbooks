@@ -1,9 +1,27 @@
 ---
-- name: patch system
-  become: true
+- name: Patch Red Hat Enterprise Linux systems
   hosts: all
+  become: true
+  
   tasks:
-  - name: upgrade all packages on RHEL
+  
+  - name: Update system packages
     yum:
       name: '*'
       state: latest
+      
+  - name: Reboot system to apply updates
+    reboot:
+  
+  - name: Wait for the system to come back online
+    wait_for_connection:
+      delay: 60
+      timeout: 320
+  
+  - name: Check if updates were applied
+    shell: yum list updates
+    register: result
+  
+  - name: Print result
+    debug:
+      msg: "{{ result.stdout }}"
