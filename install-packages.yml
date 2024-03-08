@@ -1,0 +1,14 @@
+---
+- name: Install common packages 
+  hosts: all
+  become: true
+
+  tasks: 
+  - name: Install RPM packages.
+    yum:
+      name: "{{ item }}"
+      state: present
+      loop:
+      - vim-common
+      - tmux
+      - bash-completion
