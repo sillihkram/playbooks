@@ -1,6 +1,10 @@
 ---
 - name: Create a VM from a template
+  hosts: localhost
   gather_facts: no
+  collections:
+    - community.vmware
+
   tasks:
   - name: Clone the template
     community.vmware.vmware_guest::
