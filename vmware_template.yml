@@ -1,13 +1,18 @@
 ---
 - name: Create a VM from a template
-  hosts: localhost
   gather_facts: no
   tasks:
   - name: Clone the template
-    vmware_guest:
+    community.vmware.vmware_guest::
       validate_certs: False
-      name: "{{ vcenter_vmname }}"
-      template: lesath.openincite.net
       folder: /vmfs/volumes/
+      name: "{{ wmware_vmname }}"
       state: poweredon
-      wait_for_ip_address: yes
+      template: "lesath.openincite.net"
+      disk:
+      - size_gb: 10
+        type: thin
+        datastore: datastore1
+      networks:
+      wait_for_ip_address: no
+      
