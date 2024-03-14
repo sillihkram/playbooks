@@ -9,8 +9,11 @@
       name: "{{ wmware_vmname }}"
       state: poweredon
       template: "lesath.openincite.net"
+      hardware:
+        memory_mb: "{{ vmware_mem }}"
+        num_cpus: "{{ vmware_cpu }}"
       disk:
-      - size_gb: 10
+      - size_gb: "{{ vmware_disk }}"
         type: thin
         datastore: datastore1
       networks:
