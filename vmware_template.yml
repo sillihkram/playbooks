@@ -7,7 +7,7 @@
 
   tasks:
    - name: Clone the template
-     community.vmware.vmware_guest:
+     vmware_guest:
       validate_certs: false
       folder: /vmfs/volumes/
       name: "{{ wmware_vmname }}"
