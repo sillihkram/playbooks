@@ -1,0 +1,15 @@
+---
+- name: Take virtual machine snapshot
+  hosts: localhost
+  gather_facts: False
+
+  tasks:
+  - name: Create named snapshot
+    community.vmware.vmware_guest_snapshot:
+      hostname: "{{ vcenter_hostname }}"
+      folder: "{{ vcenter_folder_path }}"
+      name: "{{ vmware_vmname }}"
+      snapshot_name: "{{ snapshot_name }}"
+      description: "{{ snapshot_description }}"
+      delegate_to: localhost
+      with_items: "{{ vcenter_hostname }}"
