@@ -18,7 +18,7 @@
        num_cpus: "{{ vmware_cpu }}"
       disk:
        - size_gb: "{{ vmware_disk }}"
-         type: thin
+         type: "thin"
          datastore: datastore1
       networks:
        wait_for_ip_address: false
