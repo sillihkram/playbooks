@@ -12,7 +12,7 @@
       folder: /vmfs/volumes/
       name: "{{ wmware_vmname }}"
       state: poweredon
-      template: "lesath.openincite.net"
+      template: {{ vmware_template_server }}
       hardware:
        memory_mb: "{{ vmware_mem }}"
        num_cpus: "{{ vmware_cpu }}"
