@@ -1,0 +1,5 @@
+---
+# Note: this requirements.yml file is used to specify what Ansible collections are
+# needed to launch playbooks in this project.
+collections:
+- community.vmware
