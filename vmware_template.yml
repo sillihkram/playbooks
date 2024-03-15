@@ -20,5 +20,3 @@
        - size_gb: "{{ vmware_disk }}"
          type: "thin"
          datastore: datastore1
-      networks:
-       wait_for_ip_address: false
