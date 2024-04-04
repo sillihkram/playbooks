@@ -1,0 +1,41 @@
+---
+- name: Configure NFS server on RHEL
+  hosts: nfsservers
+  become: yes
+  vars:
+    nfs_exports:
+      - path: '{{ shared_directory_path}}'
+        options: "*(rw,sync,no_root_squash)"
+        state: present
+
+  tasks:
+    - name: Install NFS packages
+      ansible.builtin.yum:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - nfs-utils
+        - nfs-utils-lib
+
+    - name: Ensure NFS server is enabled and started
+      ansible.builtin.service:
+        name: nfs
+        state: started
+        enabled: yes
+
+    - name: Create shared directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "0777"
+      with_items: "{{ nfs_exports }}"
+        
+    - name: Add entries to NFS exports file
+      ansible.builtin.lineinfile:
+        path: /etc/exports
+        line: "{{ item.path }} {{ item.options }}"
+        state: "{{ item.state }}"
+      with_items: "{{ nfs_exports }}"
+
+    - name: Reload NFS service to apply changes
+      command: exportfs -a
