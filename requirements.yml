@@ -3,3 +3,4 @@
 # needed to launch playbooks in this project.
 collections:
 - community.vmware
+- ansible.builtin
