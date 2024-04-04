@@ -1,6 +1,10 @@
 ---
 # Note: this requirements.yml file is used to specify what Ansible collections are
 # needed to launch playbooks in this project.
+pyVmomi>=6.7
+git+https://github.com/vmware/vsphere-automation-sdk-python.git ; python_version >= '2.7'  # Python 2.6 is not supported
+
 collections:
-- community.vmware
 - ansible.builtin
+- ansible.windows
+- community.vmware
