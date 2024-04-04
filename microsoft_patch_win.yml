@@ -3,9 +3,14 @@
   hosts: windows_servers
   gather_facts: no
   tasks:
-    - name: Install Windows Updates
-      win_updates:
-        category_names:
-          - SecurityUpdates
-          - CriticalUpdates
-        state: installed
+    - name: Ensure we wait long enough for the updates to be applied during reboot
+      ansible.windows.win_updates:
+        reboot: true
+        reboot_timeout: 3600
+        
+#    - name: Install Windows Updates
+#      win_updates:
+#        category_names:
+#          - SecurityUpdates
+#          - CriticalUpdates
+#        state: installed
