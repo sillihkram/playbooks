@@ -4,24 +4,24 @@
   become: true
   
   tasks:
-  
   - name: Update system packages
-    yum:
+    ansible.builtin.dnf:
       name: '*'
       state: latest
+      security: true
       
   - name: Reboot system to apply updates
-    reboot:
+    ansible.builtin.reboot:
   
   - name: Wait for the system to come back online
-    wait_for_connection:
+    ansible.builtin.wait_for_connection:
       delay: 60
       timeout: 320
   
   - name: Check if updates were applied
-    shell: yum list updates
+    ansible.builtin.shell: yum list updates
     register: result
   
   - name: Print result
-    debug:
+    ansible.builtin.debug:
       msg: "{{ result.stdout }}"
