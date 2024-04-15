@@ -1,0 +1,62 @@
+---
+- name: install and configure Red Hat Satellite server
+hosts: all
+
+tasks:
+- name: Register as user (joe_user) with password (somepass) and auto-subscribe to available content.
+  community.general.redhat_subscription:
+    state: present
+    username: '{{ rhsm_username }}'
+    password: '{{ rhsm_password }}'
+
+- name: Enable Required repositories for satellite server
+  redhat_subscription:
+    name: "{{ item }}"
+    state: enabled
+  loop:
+    - "rhel-8-for-x86_64-baseos-rpms"
+    - "rhel-8-for-x86_64-appstream-rpms"
+    - "satellite-6.14-for-rhel-8-x86_64-rpms"
+    - "satellite-maintenance-6.14-for-rhel-8-x86_64-rpms"
+
+- name: enable satellite el8 module
+  ansible.builtin.dnf:
+    name: "@satellite:el8"
+    state: present   
+
+- name: Upgrade all packages
+  ansible.builtin.dnf:
+    name: "*"
+    state: latest
+    
+- name: Install required rpms
+  ansible.builtin.dnf:
+    name: "satellite"
+    state: latest
+    
+- name: Enable and start firewalld
+  systemd:
+    name: firewalld
+    state: started
+    enabled: true
+
+- name: Configure Firewall
+  firewalld:
+    zone: public
+    port: "{{ item }}"
+    permanent: true
+    state: enabled
+  loop:
+    - "80/tcp"
+    - "443/tcp"
+    - "5647/tcp"
+    - "8000/tcp"
+    - "8140/tcp"
+    - "9090/tcp"
+    - "5000/tcp"
+    - "53/udp"
+    - "67/udp"
+    - "69/udp"
+
+- name: Reload firewalld
+  command: firewall-cmd --reload
