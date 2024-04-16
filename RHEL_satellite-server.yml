@@ -77,8 +77,17 @@
     ansible.builtin.dnf:
       name: '@satellite:el8'
       state: present  
-  
+      
   - name: Install required rpms for Red Hat Satellite Server
     ansible.builtin.dnf:
       name: "satellite"
       state: latest
+
+# satellite-installer --scenario satellite \
+# --foreman-initial-organization "openincite.net" \
+# --foreman-initial-location "Amesbury" \ 
+# --foreman-initial-admin-username admin \
+# --foreman-initial-admin-password password \
+# --enable-foreman-cli-ansible \
+# --enable-foreman-cli \
+# --enable-foreman-cli-katello \
