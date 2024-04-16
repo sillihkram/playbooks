@@ -3,11 +3,13 @@
   hosts: all
   become: true
   vars:
-    rhsm_username: changeme
-    rhsm_password: password
+    rhsm_username: "mhillis@redhat.com" 
+    rhsm_password: "DTXO\03ODY"
+  collections:
+  - ansible.posix
+  - ansible.builtin
+  - community.general
 
-  tasks:
-  
 # to do:
 # - break into roles 
 # - Configure session recording (role).
@@ -19,6 +21,8 @@
 # - Set SELinux context types and relabel
 # - Remediation for CIS server lvl1 (role).
 
+  tasks:
+
   - name: Register system to subscription management nework.
     community.general.redhat_subscription:
       state: present
@@ -26,7 +30,7 @@
       password: '{{ rhsm_password }}' 
 
   - name: Enable required software repositories
-    community.general.redhat_subscription:
+    community.general.rhsm_repository:
       name: '{{ item }}'
       state: enabled
     loop:
@@ -35,21 +39,6 @@
       - "satellite-6.14-for-rhel-8-x86_64-rpms"
       - "satellite-maintenance-6.14-for-rhel-8-x86_64-rpms"
 
-  - name: Enable required dnf module for satellite
-    ansible.builtin.dnf:
-      name: '@satellite:el8'
-      state: present   
-
-  - name: Update all packages
-    ansible.builtin.dnf:
-      name: "*"
-      state: latest
-    
-  - name: Install required rpms
-    ansible.builtin.dnf:
-      name: "satellite"
-      state: latest
-    
   - name: Enable and start firewalld
     ansible.builtin.systemd:
       name: firewalld
@@ -57,7 +46,7 @@
       enabled: true
 
   - name: Configure Firewall
-    ansible.builtin.firewalld:
+    ansible.posix.firewalld:
       zone: public
       port: "{{ item }}"
       permanent: true
@@ -78,3 +67,18 @@
     ansible.builtin.service:
       name: firewalld
       state: reloaded
+
+  - name: Update all packages
+    ansible.builtin.dnf:
+      name: "*"
+      state: latest
+
+  - name: Enable required dnf module for satellite
+    ansible.builtin.dnf:
+      name: '@satellite:el8'
+      state: present  
+  
+  - name: Install required rpms
+    ansible.builtin.dnf:
+      name: "satellite"
+      state: latest
