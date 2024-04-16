@@ -4,7 +4,7 @@
   become: true
   vars:
     rhsm_username: "mhillis@redhat.com" 
-    rhsm_password: "DTXO\03ODY"
+    rhsm_password: "changeme"
   collections:
   - ansible.posix
   - ansible.builtin
