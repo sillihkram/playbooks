@@ -5,6 +5,7 @@
   vars:
     rhsm_username: "username" 
     rhsm_password: "changeme"
+    sat_verion: "6.14"
   collections:
   - ansible.posix
   - ansible.builtin
@@ -73,15 +74,42 @@
       name: "*"
       state: latest
 
-  - name: Enable required dnf module for Red Hat Satellite Server
+#  - name: Enable required dnf module for Red Hat Satellite Server
+#    ansible.builtin.dnf:
+#      name: '@satellite:el8'
+#      state: present  
+
+  - name: Enable ruby:2.7 and postgresql:12 modules for RHEL 8
     ansible.builtin.dnf:
-      name: '@satellite:el8'
-      state: present  
-      
+      name: '{{ item }}'
+      state: present
+    with_items:
+      - '@ruby:2.7'
+      - '@postgresql:12'
+    when: ansible_distribution_major_version == '8' and sat_version >= 6.14
+  
+# Workaround for @satellite:el8 until https://github.com/ansible/ansible/pull/76277 is resolved
+- name: Enable satellite:el8 module for RHEL 8
+  ansible.builtin.copy:
+    dest: '/etc/dnf/modules.d/{{ item }}'
+    src: 'files/{{ item }}'
+  with_items:
+    - pki-core.module
+    - pki-deps.module
+    - satellite.module
   - name: Install required rpms for Red Hat Satellite Server
     ansible.builtin.dnf:
       name: "satellite"
       state: latest
+  - name: Enable satellite:el8 module for RHEL 8
+    ansible.builtin.copy:
+      dest: '/etc/dnf/modules.d/{{ item }}'
+      src: 'files/{{ item }}'
+    with_items:
+      - pki-core.module
+      - pki-deps.module
+      - satellite.module
+    when: ansible_distribution_major_version == '8' and sat_version >= 6.14
 
 # satellite-installer --scenario satellite \
 # --foreman-initial-organization "openincite.net" \
