@@ -3,7 +3,7 @@
   hosts: all
   become: true
   vars:
-    rhsm_username: "mhillis@redhat.com" 
+    rhsm_username: "username" 
     rhsm_password: "changeme"
   collections:
   - ansible.posix
