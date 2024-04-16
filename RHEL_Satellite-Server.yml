@@ -8,16 +8,17 @@
 
   tasks:
   
-# additional tasks being considered:
-# - Configure session recording.
-# - Install common packages (vim,tmux,
-# - set tuned profile
-# - IDM enrollement.
+# to do:
+# - break into roles 
+# - Configure session recording (role).
+# - Install common packages (role).
+# - set tuned profile (role).
+# - IDM enrollement (role).
 # - attach new virt disk to vm. 
 # - configure lvm disk for /var
 # - Set SELinux context types and relabel
-# - Remediation for CIS server lvl1.
-  
+# - Remediation for CIS server lvl1 (role).
+
   - name: Register system to subscription management nework.
     community.general.redhat_subscription:
       state: present
