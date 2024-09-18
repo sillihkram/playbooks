@@ -1,21 +1,21 @@
 ---
-- name: Playbook to configure host as satellite client 
+- name: Playbook to configure host as satellite client
   hosts: all
   become: true
-  
-  tasks: 
-  - name: Download katello-ca-consumer Package
-    get_url:
-     url: http://dschubba.openincite.net/pub/katello-ca-consumer-latest.noarch.rpm
-     dest: /tmp/katello-ca-consumer-latest.noarch.rpm
-     mode: '0775'
 
-  - name: Install package
-    yum:
-     name: /tmp/katello-ca-consumer-latest.noarch.rpm
-     state: present
-     
-# - name: Register system using activation key
-#  redhat_subscription:
-#  org_id: "Default_Organization"
-#   state: present
+  tasks:
+    - name: Download katello-ca-consumer Package
+      ansible.builtin.get_url:
+        url: http://dschubba.openincite.net/pub/katello-ca-consumer-latest.noarch.rpm
+        dest: /tmp/katello-ca-consumer-latest.noarch.rpm
+        mode: "0775"
+
+    - name: Install package
+      ansible.builtin.yum:
+        name: /tmp/katello-ca-consumer-latest.noarch.rpm
+        state: present
+
+  # - name: Register system using activation key
+  #  redhat_subscription:
+  #  org_id: "Default_Organization"
+  #   state: present
