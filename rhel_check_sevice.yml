@@ -1,18 +1,20 @@
 ---
- - hosts: all
-   vars:
-     - package_name: firewalld
-     - service_name: firewalld.service
-   tasks: 
-   - name: "Ensure package is installed"
-     yum: 
-      name: "{{ package_name }}"
-      state: present
-   - name: "Ensure service is enabled"
-     service: 
-      name: "{{ service_name }}"
-      enabled: yes
-   - name: "Ensure service is running"
-     service:
-      name: "{{ service_name }}"
-      state: started
+- hosts: all
+  vars:
+    - package_name: firewalld
+    - service_name: firewalld.service
+  tasks:
+    - name: Ensure package is installed
+      ansible.builtin.yum:
+        name: "{{ package_name }}"
+        state: present
+
+    - name: Ensure service is enabled
+      ansible.builtin.service:
+        name: "{{ service_name }}"
+        enabled: true
+
+    - name: Ensure service is running
+      ansible.builtin.service:
+        name: "{{ service_name }}"
+        state: started
