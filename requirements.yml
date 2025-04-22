@@ -1,6 +1,5 @@
 ---
 collections:
-- ansible.builtin
 - ansible.windows
 - community.vmware
 
