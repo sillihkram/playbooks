@@ -1,0 +1,120 @@
+---
+- name: Create Bootable Network Install DVD ISO for RHEL 9 with Kickstart
+  hosts: localhost
+  gather_facts: false
+  vars_prompt:
+    - name: hostname
+      prompt: "Enter the hostname for the RHEL 9 system"
+      private: false
+    - name: rhel_baseurl
+      prompt: "Enter the base URL for the RHEL 9 repository (e.g., http://download.example.com/rhel/9/BaseOS/x86_64/os/)"
+      private: false
+
+  tasks:
+    - name: Create temporary directory
+      ansible.builtin.tempfile:
+        state: directory
+      register: temp_dir
+
+    - name: Create isolinux directory structure
+      ansible.builtin.file:
+        path: "{{ temp_dir.path }}/isolinux"
+        state: directory
+
+    - name: Create isolinux configuration file (isolinux.cfg) for network install
+      ansible.builtin.copy:
+        dest: "{{ temp_dir.path }}/isolinux/isolinux.cfg"
+        content: |
+          default vesamenu.c32
+          timeout 600
+          display boot.msg
+
+          menu background splash.png
+          menu title Boot Menu
+
+          label linux
+            menu label Install RHEL 9 System (Network)
+            kernel vmlinuz
+            append initrd=initrd.img inst.stage2={{ rhel_baseurl }} inst.ks=cdrom:/ks.cfg hostname={{ hostname }}
+
+          label vesa
+            menu label Install RHEL 9 in basic graphics mode (Network)
+            kernel vmlinuz
+            append initrd=initrd.img inst.stage2={{ rhel_baseurl }} inst.ks=cdrom:/ks.cfg xdriver=vesa hostname={{ hostname }}
+
+          label local
+            menu label Boot from local drive
+            localboot 0xffff
+
+    - name: Create a simple boot message (boot.msg)
+      ansible.builtin.copy:
+        dest: "{{ temp_dir.path }}/boot.msg"
+        content: |
+          Welcome to the Red Hat Enterprise Linux 9 Network Installation!
+          Press Enter to begin the installation.
+          You can also type 'linux' and press Enter for a standard install,
+          or 'vesa' for a basic graphics install.
+
+    - name: Download the RHEL 9 kernel (vmlinuz) from the network install image
+      ansible.builtin.get_url:
+        url: "{{ rhel_baseurl }}/images/pxeboot/vmlinuz"
+        dest: "{{ temp_dir.path }}/vmlinuz"
+        mode: '0644'
+        remote_src: true
+      ignore_errors: true
+      register: kernel_download
+
+    - name: Download the RHEL 9 initrd (initrd.img) from the network install image
+      ansible.builtin.get_url:
+        url: "{{ rhel_baseurl }}/images/pxeboot/initrd.img"
+        dest: "{{ temp_dir.path }}/initrd.img"
+        mode: '0644'
+        remote_src: true
+      ignore_errors: true
+      register: initrd_download
+
+    - name: Fail if kernel or initrd download failed
+      ansible.builtin.fail:
+        msg: "Failed to download kernel or initrd. Please ensure the base URL is correct."
+      when: kernel_download.failed or initrd_download.failed
+
+    - name: Create a basic Kickstart file (ks.cfg) for RHEL 9
+      ansible.builtin.copy:
+        dest: "{{ temp_dir.path }}/ks.cfg"
+        content: |
+          install
+          unsupported_hardware
+          lang en_US.UTF-8
+          keyboard us
+          network --bootproto=dhcp --hostname={{ hostname }}
+          rootpw --plaintext insecurepassword
+          firewall --enabled --ssh
+          selinux --enforcing
+          timezone America/New_York
+          bootloader --location=mbr --boot-drive=sda
+          zerombr yes
+          clearpart --all --initlabel
+          autopart --type=lvm
+          user --name=admin --password=insecurepassword --groups=wheel
+          reboot
+
+          %packages
+          @^minimal-environment
+          kexec-tools
+          %end
+
+    - name: Generate the bootable ISO image
+      ansible.builtin.command:
+        cmd: "mkisofs -o rhel9_network_install.iso -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table {{ temp_dir.path }}"
+      args:
+        chdir: "{{ temp_dir.path }}"
+      register: mkisofs_output
+
+    - name: Print mkisofs output
+      ansible.builtin.debug:
+        var: mkisofs_output.stdout_lines
+
+    - name: Remove temporary directory
+      ansible.builtin.file:
+        path: "{{ temp_dir.path }}"
+        state: absent
