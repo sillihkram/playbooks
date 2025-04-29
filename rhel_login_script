@@ -1,0 +1,45 @@
+---
+- name: Run OS info script at admin user login
+  hosts: linux
+  become: yes
+  vars:
+    admin_user: admin
+    script_name: os_info.sh
+    script_dest: "/home/{{ admin_user }}/{{ script_name }}"
+    bashrc_path: "/home/{{ admin_user }}/.bashrc"
+
+  tasks:
+
+    - name: Copy OS info script to admin's home directory
+      copy:
+        content: |
+          #!/bin/bash
+
+          # Get number of CPU cores
+          CORES=$(nproc)
+
+          # Get total memory in GB (rounded down)
+          MEMORY=$(free -g | awk '/^Mem:/ {print $2}')
+
+          # Get disk size from fdisk output for /dev/sda
+          DISK=$(sudo fdisk -l /dev/sda 2>/dev/null | \
+            awk '/^Disk \/dev\/sda:/ {print $3, $4}' | sed 's/,//')
+
+          # Output
+          printf "Cores:\t\t%s\n" "$CORES"
+          printf "Memory:\t\t%s GB\n" "$MEMORY"
+          printf "Disk:\t\t%s\n" "$DISK"
+        dest: "{{ script_dest }}"
+        owner: "{{ admin_user }}"
+        group: "{{ admin_user }}"
+        mode: '0755'
+
+    - name: Ensure the script runs at login by sourcing it in .bashrc
+      lineinfile:
+        path: "{{ bashrc_path }}"
+        line: "{{ script_dest }}"
+        state: present
+        insertafter: EOF
+        owner: "{{ admin_user }}"
+        group: "{{ admin_user }}"
+        mode: '0644'
