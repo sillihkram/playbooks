@@ -1,0 +1,60 @@
+---
+- name: Provision RHEL9 VM on VMware ESXi
+  hosts: localhost
+  gather_facts: no
+  vars:
+    vcenter_hostname: "your-esxi-or-vcenter-host"
+    vcenter_username: "administrator@vsphere.local"
+    vcenter_password: "your_password"
+    datacenter_name: "Datacenter"
+    cluster_name: "Cluster"              # or host system name if ESXi standalone
+    datastore_name: "datastore1"
+    iso_datastore_path: "[datastore1] iso/rhel9_network_install.iso"
+    network_name: "VM Network"
+    vm_name: "RHEL9-VM"
+    vm_folder: "/"
+    vm_guest_id: "rhel9_64Guest"
+    vm_memory_mb: 8192
+    vm_num_cpus: 4
+    vm_disk_size_gb: 60
+    vm_scsi_type: "paravirtual"
+
+  tasks:
+    - name: Create RHEL9 virtual machine
+      community.vmware.vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vm_name }}"
+        datacenter: "{{ datacenter_name }}"
+        folder: "{{ vm_folder }}"
+        cluster: "{{ cluster_name }}"
+        state: poweredoff
+        guest_id: "{{ vm_guest_id }}"
+        hardware:
+          memory_mb: "{{ vm_memory_mb }}"
+          num_cpus: "{{ vm_num_cpus }}"
+          scsi: "{{ vm_scsi_type }}"
+        disk:
+          - size_gb: "{{ vm_disk_size_gb }}"
+            type: thin
+            datastore: "{{ datastore_name }}"
+        cdrom:
+          type: iso
+          iso_path: "{{ iso_datastore_path }}"
+        network:
+          - name: "{{ network_name }}"
+            type: vmxnet3
+            start_connected: true
+        wait_for_ip_address: no
+
+    - name: Power on the VM
+      community.vmware.vmware_guest_powerstate:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vm_name }}"
+        datacenter: "{{ datacenter_name }}"
+        state: powered-on
