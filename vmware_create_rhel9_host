@@ -2,6 +2,9 @@
 - name: Provision RHEL9 VM on VMware ESXi
   hosts: localhost
   gather_facts: no
+  collections:
+   - community.vmware
+
   vars:
     vcenter_hostname: "your-esxi-or-vcenter-host"
     vcenter_username: "administrator@vsphere.local"
