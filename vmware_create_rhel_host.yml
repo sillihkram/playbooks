@@ -10,7 +10,7 @@
     vcenter_username: "administrator@vsphere.local"
     vcenter_password: "your_password"
     datacenter_name: "Datacenter"
-    cluster_name: "Cluster"              # or host system name if ESXi standalone
+    cluster_name: "{{ vcenter_hostname }}"              # or host system name if ESXi standalone
     datastore_name: "datastore1"
     iso_datastore_path: "[datastore1] iso/rhel9_network_install.iso"
     network_name: "VM Network"
