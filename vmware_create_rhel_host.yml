@@ -1,26 +1,26 @@
 ---
 - name: Provision RHEL9 VM on VMware ESXi
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   collections:
-   - community.vmware
+    - community.vmware
 
   vars:
-    vcenter_hostname: "your-esxi-or-vcenter-host"
-    vcenter_username: "administrator@vsphere.local"
-    vcenter_password: "your_password"
-    datacenter_name: "Datacenter"
-    cluster_name: "Cluster"              # or host system name if ESXi standalone
-    datastore_name: "datastore1"
+    vcenter_hostname: your-esxi-or-vcenter-host
+    vcenter_username: administrator@vsphere.local
+    vcenter_password: your_password
+    datacenter_name: Datacenter
+    cluster_name: Cluster # or host system name if ESXi standalone
+    datastore_name: datastore1
     iso_datastore_path: "[datastore1] iso/rhel9_network_install.iso"
-    network_name: "VM Network"
-    vm_name: "RHEL9-VM"
-    vm_folder: "/"
-    vm_guest_id: "rhel9_64Guest"
+    network_name: VM Network
+    vm_name: RHEL9-VM
+    vm_folder: /
+    vm_guest_id: rhel9_64Guest
     vm_memory_mb: 8192
     vm_num_cpus: 4
     vm_disk_size_gb: 60
-    vm_scsi_type: "paravirtual"
+    vm_scsi_type: paravirtual
 
   tasks:
     - name: Create RHEL9 virtual machine
@@ -28,7 +28,7 @@
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
-        validate_certs: no
+        validate_certs: false
         name: "{{ vm_name }}"
         datacenter: "{{ datacenter_name }}"
         folder: "{{ vm_folder }}"
@@ -50,14 +50,14 @@
           - name: "{{ network_name }}"
             type: vmxnet3
             start_connected: true
-        wait_for_ip_address: no
+        wait_for_ip_address: false
 
     - name: Power on the VM
       community.vmware.vmware_guest_powerstate:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
-        validate_certs: no
+        validate_certs: false
         name: "{{ vm_name }}"
         datacenter: "{{ datacenter_name }}"
         state: powered-on
