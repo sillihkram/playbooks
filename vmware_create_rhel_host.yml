@@ -7,12 +7,12 @@
 
   vars:
     vcenter_hostname: "your-esxi-or-vcenter-host"
-    vcenter_username: "administrator@vsphere.local"
+    vcenter_username: "root@'{{ vcenter_hostname }}'
     vcenter_password: "your_password"
     datacenter_name: "Datacenter"
     cluster_name: "{{ vcenter_hostname }}"              # or host system name if ESXi standalone
     datastore_name: "datastore1"
-    iso_datastore_path: "[datastore1] iso/rhel9_network_install.iso"
+    iso_datastore_path: "[nas00] iso/rhel9_network_install.iso"
     network_name: "VM Network"
     vm_name: "RHEL9-VM"
     vm_folder: "/"
