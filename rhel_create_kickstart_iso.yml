@@ -4,10 +4,10 @@
   gather_facts: false
   vars_prompt:
     - name: hostname
-      prompt: "Enter the hostname for the RHEL 9 system"
+      prompt: Enter the hostname for the RHEL 9 system
       private: false
     - name: rhel_baseurl
-      prompt: "Enter the base URL for the RHEL 9 repository (e.g., http://download.example.com/rhel/9/BaseOS/x86_64/os/)"
+      prompt: Enter the base URL for the RHEL 9 repository (e.g., http://download.example.com/rhel/9/BaseOS/x86_64/os/)
       private: false
 
   tasks:
@@ -59,7 +59,7 @@
       ansible.builtin.get_url:
         url: "{{ rhel_baseurl }}/images/pxeboot/vmlinuz"
         dest: "{{ temp_dir.path }}/vmlinuz"
-        mode: '0644'
+        mode: "0644"
         remote_src: true
       ignore_errors: true
       register: kernel_download
@@ -68,14 +68,14 @@
       ansible.builtin.get_url:
         url: "{{ rhel_baseurl }}/images/pxeboot/initrd.img"
         dest: "{{ temp_dir.path }}/initrd.img"
-        mode: '0644'
+        mode: "0644"
         remote_src: true
       ignore_errors: true
       register: initrd_download
 
     - name: Fail if kernel or initrd download failed
       ansible.builtin.fail:
-        msg: "Failed to download kernel or initrd. Please ensure the base URL is correct."
+        msg: Failed to download kernel or initrd. Please ensure the base URL is correct.
       when: kernel_download.failed or initrd_download.failed
 
     - name: Create a basic Kickstart file (ks.cfg) for RHEL 9
@@ -105,7 +105,8 @@
 
     - name: Generate the bootable ISO image
       ansible.builtin.command:
-        cmd: "mkisofs -o rhel9_network_install.iso -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table {{ temp_dir.path }}"
+        cmd: mkisofs -o rhel9_network_install.iso -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table {{ temp_dir.path
+          }}
       args:
         chdir: "{{ temp_dir.path }}"
       register: mkisofs_output

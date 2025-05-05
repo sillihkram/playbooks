@@ -1,17 +1,16 @@
 ---
 - name: Run OS info script at admin user login
   hosts: linux
-  become: yes
+  become: true
   vars:
     admin_user: admin
     script_name: os_info.sh
-    script_dest: "/home/{{ admin_user }}/{{ script_name }}"
-    bashrc_path: "/home/{{ admin_user }}/.bashrc"
+    script_dest: /home/{{ admin_user }}/{{ script_name }}
+    bashrc_path: /home/{{ admin_user }}/.bashrc
 
   tasks:
-
     - name: Copy OS info script to admin's home directory
-      copy:
+      ansible.builtin.copy:
         content: |
           #!/bin/bash
 
@@ -32,14 +31,14 @@
         dest: "{{ script_dest }}"
         owner: "{{ admin_user }}"
         group: "{{ admin_user }}"
-        mode: '0755'
+        mode: "0755"
 
     - name: Ensure the script runs at login by sourcing it in .bashrc
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: "{{ bashrc_path }}"
         line: "{{ script_dest }}"
         state: present
         insertafter: EOF
         owner: "{{ admin_user }}"
         group: "{{ admin_user }}"
-        mode: '0644'
+        mode: "0644"
