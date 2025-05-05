@@ -7,7 +7,7 @@
 
   vars:
     vcenter_hostname: "your-esxi-or-vcenter-host"
-    vcenter_username: "root@'{{ vcenter_hostname }}'
+    vcenter_username: "root@'{{ vcenter_hostname }}'"
     vcenter_password: "your_password"
     datacenter_name: "Datacenter"
     cluster_name: "{{ vcenter_hostname }}"              # or host system name if ESXi standalone
