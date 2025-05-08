@@ -3,20 +3,20 @@
   hosts: localhost
   gather_facts: false
   collections:
-   - community.vmware
+    - community.vmware
 
   tasks:
-   - name: Clone the template
-     vmware_guest:
-      validate_certs: false
-      folder: /vmfs/volumes/
-      name: "{{ wmware_vmname }}"
-      state: poweredon
-      template: {{ vmware_template_server }}
-      hardware:
-       memory_mb: "{{ vmware_mem }}"
-       num_cpus: "{{ vmware_cpu }}"
-      disk:
-       - size_gb: "{{ vmware_disk }}"
-         type: "thin"
-         datastore: datastore1
+    - name: Clone the template
+      vmware_guest:
+        validate_certs: false
+        folder: /vmfs/volumes/
+        name: "{{ wmware_vmname }}"
+        state: poweredon
+        template: { { vmware_template_server: !!null "" }: !!null "" }
+        hardware:
+          memory_mb: "{{ vmware_mem }}"
+          num_cpus: "{{ vmware_cpu }}"
+        disk:
+          - size_gb: "{{ vmware_disk }}"
+            type: thin
+            datastore: datastore1
