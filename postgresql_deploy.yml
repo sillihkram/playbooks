@@ -1,0 +1,96 @@
+---
+- name: Deploy PostgreSQL 13, Configure Database, Insert Data, and Backup
+  hosts: db_servers
+  become: yes
+  vars:
+    pg_version: 13
+    db_name: infrastructure
+    db_user: ansible_db_user
+    db_password: "YourStrongPasswordHere" # CHANGE THIS
+
+  tasks:
+    - name: Ensure PostgreSQL 13 is installed and running
+      ansible.builtin.dnf:
+        name:
+          - postgresql-server-{{ pg_version }}
+          - python3-psycopg2 # Required for the postgresql_db/user modules
+        state: present
+      # Initialize the database if it's a fresh install
+    - name: Initialize PostgreSQL database
+      ansible.builtin.shell: |
+        /usr/pgsql-{{ pg_version }}/bin/postgresql-{{ pg_version }}-setup initdb
+      args:
+        creates: /var/lib/pgsql/{{ pg_version }}/data/postgresql.conf # Checks if data directory exists
+      when: ansible_distribution_major_version == "9" # For RHEL 9 standard path
+
+    - name: Start and enable PostgreSQL service
+      ansible.builtin.systemd:
+        name: postgresql-{{ pg_version }}
+        state: started
+        enabled: yes
+
+    # --- Database and User Setup ---
+    - name: Create database user
+      community.postgresql.postgresql_user:
+        db: postgres
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        priv: ALL
+        state: present
+
+    - name: Create 'infrastructure' database
+      community.postgresql.postgresql_db:
+        name: "{{ db_name }}"
+        owner: "{{ db_user }}"
+        state: present
+
+    # --- Schema and Data Insertion ---
+    - name: Create 'servers' table in the infrastructure database
+      community.postgresql.postgresql_query:
+        db: "{{ db_name }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        query: |
+          CREATE TABLE IF NOT EXISTS servers (
+            id SERIAL PRIMARY KEY,
+            hostname VARCHAR(255) NOT NULL UNIQUE,
+            ip_address INET,
+            subnet CIDR,
+            gateway INET,
+            firmware VARCHAR(100),
+            kernel VARCHAR(100)
+          );
+
+    - name: Insert sample server data
+      community.postgresql.postgresql_query:
+        db: "{{ db_name }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        query: |
+          INSERT INTO servers (hostname, ip_address, subnet, gateway, firmware, kernel) VALUES
+          ('rhel8-web01', '192.168.1.10', '255.255.255.0', '192.168.1.1', 'BIOS_v2.1', '4.18.0'),
+          ('rhel8-db02', '192.168.1.11', '255.255.255.0', '192.168.1.1', 'UEFI_v1.5', '4.18.0'),
+          ('rhel8-app03', '192.168.1.12', '255.255.255.0', '192.168.1.1', 'BIOS_v2.0', '4.18.0'),
+          ('rhel9-prod01', '192.168.2.20', '255.255.255.0', '192.168.2.1', 'UEFI_v3.0', '5.14.0'),
+          ('rhel9-dev02', '192.168.2.21', '255.255.255.0', '192.168.2.1', 'UEFI_v3.1', '5.14.0'),
+          ('rhel9-test03', '192.168.2.22', '255.255.255.0', '192.168.2.1', 'UEFI_v3.0', '5.14.0')
+          ON CONFLICT (hostname) DO NOTHING; # Prevents error on re-run
+
+    # --- Verification and Backup ---
+    - name: Verify data insertion with a simple SELECT query
+      community.postgresql.postgresql_query:
+        db: "{{ db_name }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        query: 'SELECT hostname, ip_address FROM servers LIMIT 3;'
+      register: sql_result
+
+    - name: Display query result
+      ansible.builtin.debug:
+        msg: "SQL Verification Result (First 3 rows): {{ sql_result.query_result | json_query('[].{hostname: hostname, ip_address: ip_address}') }}"
+
+    - name: Backup the infrastructure database
+      ansible.builtin.shell:
+        cmd: "PGPASSWORD={{ db_password }} /usr/pgsql-{{ pg_version }}/bin/pg_dump -U {{ db_user }} -F t -f /tmp/{{ db_name }}_$(date +%Y%m%d_%H%M%S).tar {{ db_name }}"
+      args:
+        executable: /bin/bash # Needed to use PGPASSWORD and date command

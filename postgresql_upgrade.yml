@@ -1,0 +1,103 @@
+---
+- name: Test, Backup, and Upgrade PostgreSQL to 16
+  hosts: db_servers
+  become: yes
+  vars:
+    old_pg_version: 13
+    new_pg_version: 16
+    db_name: infrastructure
+    db_user: ansible_db_user
+    db_password: "YourStrongPasswordHere" # CHANGE THIS
+
+  tasks:
+    # --- Pre-Upgrade Checks and Backup ---
+    - name: Pre-Upgrade: Test SQL Query ('select * from servers')
+      community.postgresql.postgresql_query:
+        db: "{{ db_name }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        query: 'SELECT count(*) AS total_rows FROM servers;'
+      register: pre_upgrade_test
+
+    - name: Display Pre-Upgrade Query Result
+      ansible.builtin.debug:
+        msg: "Pre-Upgrade: The 'servers' table has {{ pre_upgrade_test.query_result[0].total_rows }} rows."
+
+    - name: Pre-Upgrade: Full Backup of the infrastructure database
+      ansible.builtin.shell:
+        cmd: "PGPASSWORD={{ db_password }} /usr/pgsql-{{ old_pg_version }}/bin/pg_dumpall -U {{ db_user }} -f /tmp/all_dbs_pre_upgrade_$(date +%Y%m%d_%H%M%S).sql"
+      args:
+        executable: /bin/bash
+      register: backup_status
+
+    - name: Report Backup Success
+      ansible.builtin.debug:
+        msg: "Full database backup completed successfully to /tmp/ with exit code {{ backup_status.rc }}"
+
+    # --- Upgrade Process (Using standard RHEL/dnf-based approach) ---
+    - name: Stop the running PostgreSQL {{ old_pg_version }} service
+      ansible.builtin.systemd:
+        name: postgresql-{{ old_pg_version }}
+        state: stopped
+
+    - name: Install PostgreSQL {{ new_pg_version }}
+      ansible.builtin.dnf:
+        name:
+          - postgresql-server-{{ new_pg_version }}
+          - python3-psycopg2 # Ensure the dependency is present for the new version
+        state: latest
+
+    - name: Initialize the new PostgreSQL {{ new_pg_version }} data cluster
+      ansible.builtin.shell: |
+        /usr/pgsql-{{ new_pg_version }}/bin/postgresql-{{ new_pg_version }}-setup initdb
+      args:
+        creates: /var/lib/pgsql/{{ new_pg_version }}/data/postgresql.conf
+
+    - name: Perform in-place data upgrade using pg_upgrade
+      # NOTE: This is a simplified in-place example. A safer approach often involves a full dump/restore.
+      # RHEL/CentOS systems usually provide helper scripts for this.
+      ansible.builtin.shell: |
+        /usr/pgsql-{{ new_pg_version }}/bin/pg_upgrade \
+          --old-datadir /var/lib/pgsql/{{ old_pg_version }}/data \
+          --new-datadir /var/lib/pgsql/{{ new_pg_version }}/data \
+          --old-bindir /usr/pgsql-{{ old_pg_version }}/bin \
+          --new-bindir /usr/pgsql-{{ new_pg_version }}/bin \
+          --link \
+          --username={{ db_user }} # User must have superuser permissions
+
+    - name: Start the new PostgreSQL {{ new_pg_version }} service
+      ansible.builtin.systemd:
+        name: postgresql-{{ new_pg_version }}
+        state: started
+        enabled: yes
+
+    - name: Remove the old PostgreSQL {{ old_pg_version }} packages
+      ansible.builtin.dnf:
+        name: postgresql-server-{{ old_pg_version }}
+        state: absent
+        # NOTE: Check for other related packages if they exist
+
+    # --- Post-Upgrade Verification ---
+    - name: Post-Upgrade: Test SQL Query ('select * from servers') on the new version
+      community.postgresql.postgresql_query:
+        db: "{{ db_name }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        query: 'SELECT * FROM servers;' # Select all to ensure data integrity
+      register: post_upgrade_test
+
+    - name: Display Post-Upgrade Query Result (First row)
+      ansible.builtin.debug:
+        msg: "Post-Upgrade SUCCESS: Data retrieved from server: {{ post_upgrade_test.query_result[0] }}"
+
+    - name: Check PostgreSQL 16 Version
+      community.postgresql.postgresql_query:
+        db: postgres
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        query: 'SELECT version();'
+      register: version_check
+
+    - name: Display Version Check
+      ansible.builtin.debug:
+
