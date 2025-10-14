@@ -39,6 +39,8 @@
           - rear
           - genisoimage
           - nfs-utils
+          - grub2-efi-x64-modules
+          - grub2-tools-extra
         state: present
       when: ansible_os_family == "RedHat"
       
