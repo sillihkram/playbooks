@@ -2,16 +2,14 @@
 - name: Provision RHEL9 VM on VMware ESXi
   hosts: localhost
   gather_facts: no
-  collections:
-   - community.vmware
 
   vars:
     vcenter_hostname: "your-esxi-or-vcenter-host"
     vcenter_admin: "root"
-    vcenter_username: "{{ vcenter_admin }}"@"{{ vcenter_hostname }}"
+    vcenter_username: "{{ vcenter_admin }}@{{ vcenter_hostname }}"
     vcenter_password: "your_password"
     datacenter_name: "Datacenter"
-    cluster_name: "{{ vcenter_hostname }}"              # or host system name if ESXi standalone
+    cluster_name: "{{ vcenter_hostname }}" # or host system name if ESXi standalone
     datastore_name: "datastore1"
     iso_datastore_path: "[nas00] iso/rhel9_network_install.iso"
     network_name: "VM Network"
@@ -34,13 +32,13 @@
         datacenter: "{{ datacenter_name }}"
         folder: "{{ vm_folder }}"
         cluster: "{{ cluster_name }}"
-        state: poweredoff
+        state: poweredon
         guest_id: "{{ vm_guest_id }}"
         hardware:
           memory_mb: "{{ vm_memory_mb }}"
           num_cpus: "{{ vm_num_cpus }}"
           scsi: "{{ vm_scsi_type }}"
-        disk:
+        disks:
           - size_gb: "{{ vm_disk_size_gb }}"
             type: thin
             datastore: "{{ datastore_name }}"
