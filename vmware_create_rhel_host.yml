@@ -43,28 +43,29 @@
         guest_id: "{{ vm_guest_id }}"
         
         # --- HARDWARE CONFIGURATION ---
-        cpu: "{{ vm_num_cpus }}"
-        memory: "{{ vm_memory_mb }}"
+        # FIXED: Enforce string type for CPU and Memory
+        cpu: "{{ vm_num_cpus | string }}"
+        memory: "{{ vm_memory_mb | string }}"
         
-        # 1. FIXED: SCSI Controller now includes the required 'bus_number' and 'label'
+        # 1. FIXED: SCSI Controller now explicitly defines its unique ID (key)
         scsi_controllers:
           - type: "{{ vm_scsi_type }}" 
             bus_number: 0              
-            label: 'SCSI Controller 0' 
+            label: 'SCSI Controller 0'
+            key: 1000 # Explicitly set key 1000
 
-        # 2. Disks (controller_key must match the key of the SCSI controller, which is usually 1000)
+        # 2. Disks
         disks:
           - size_gb: "{{ vm_disk_size_gb }}"
             type: thin
             datastore: "{{ datastore_name }}"
-            # Key 1000 refers to the first SCSI controller in the inventory model
-            controller_key: 1000 
+            controller_key: 1000 # Attaches to controller 1000
 
-        # 3. CDROMs (controller_key 200 refers to the first IDE controller)
+        # 3. CDROMs
         cdroms:
           - type: iso
             iso_path: "{{ iso_datastore_path }}"
-            controller_key: 200 
+            controller_key: 200 # Attaches to default IDE controller 200
 
         # 4. Network Adapters
         network_adapters:
