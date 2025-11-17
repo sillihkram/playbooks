@@ -43,8 +43,8 @@
             type: thin
             datastore: "{{ datastore_name }}"
         cdrom:
-          type: iso
-          iso_path: "{{ iso_datastore_path }}"
+          - type: iso 
+            iso_path: "{{ iso_datastore_path }}"
         network:
           - name: "{{ network_name }}"
             type: vmxnet3
