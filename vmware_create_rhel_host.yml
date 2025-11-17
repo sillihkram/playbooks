@@ -21,8 +21,8 @@
     vm_disk_size_gb: 60
     vm_scsi_type: "paravirtual"
 
-  tasks:
-  - name: Create RHEL9 virtual machine
+tasks:
+    - name: Create RHEL9 virtual machine
       community.vmware.vmware_guest:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -39,7 +39,6 @@
           num_cpus: "{{ vm_num_cpus }}"
           scsi: "{{ vm_scsi_type }}"
         
-        # FIXED: Changed 'disks' (plural) to 'disk' (singular)
         disk:
           - size_gb: "{{ vm_disk_size_gb }}"
             type: thin
@@ -49,9 +48,19 @@
           - type: iso 
             iso_path: "{{ iso_datastore_path }}"
             
-        # FIXED: Changed 'network' (singular) to 'networks' (plural)
         networks:
           - name: "{{ network_name }}"
             type: vmxnet3
             start_connected: true
         wait_for_ip_address: no
+        
+# FULLY DEFINED SECOND TASK
+    - name: Power on the VM
+      community.vmware.vmware_guest_powerstate:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vm_name }}"
+        datacenter: "{{ datacenter_name }}"
+        state: powered-on
