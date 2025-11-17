@@ -22,7 +22,7 @@
     vm_scsi_type: "paravirtual"
 
   tasks:
-    - name: Create RHEL9 virtual machine
+  - name: Create RHEL9 virtual machine
       community.vmware.vmware_guest:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -32,31 +32,26 @@
         datacenter: "{{ datacenter_name }}"
         folder: "{{ vm_folder }}"
         cluster: "{{ cluster_name }}"
-        state: poweredon
+        state: poweredoff
         guest_id: "{{ vm_guest_id }}"
         hardware:
           memory_mb: "{{ vm_memory_mb }}"
           num_cpus: "{{ vm_num_cpus }}"
           scsi: "{{ vm_scsi_type }}"
-        disks:
+        
+        # FIXED: Changed 'disks' (plural) to 'disk' (singular)
+        disk:
           - size_gb: "{{ vm_disk_size_gb }}"
             type: thin
             datastore: "{{ datastore_name }}"
+            
         cdrom:
           - type: iso 
             iso_path: "{{ iso_datastore_path }}"
-        network:
+            
+        # FIXED: Changed 'network' (singular) to 'networks' (plural)
+        networks:
           - name: "{{ network_name }}"
             type: vmxnet3
             start_connected: true
         wait_for_ip_address: no
-
-    - name: Power on the VM
-      community.vmware.vmware_guest_powerstate:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        validate_certs: no
-        name: "{{ vm_name }}"
-        datacenter: "{{ datacenter_name }}"
-        state: powered-on
