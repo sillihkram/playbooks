@@ -2,8 +2,8 @@
 collections:
 - ansible.windows
 - community.vmware
-- vmware.vmware
-- cloud.vmware_ops
+- vmware.vmware:2.5
+- cloud.vmware_ops:1.9.0
 - community.postgresql
 
 # Note: this requirements.yml file is used to specify what Ansible collections are
