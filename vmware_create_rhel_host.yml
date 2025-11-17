@@ -29,7 +29,6 @@
 
   tasks:
     - name: Create RHEL9 virtual machine and configure hardware
-      # FIXED: Module name changed from vmware.vmware.vm_guest to vmware.vmware.vm
       vmware.vmware.vm:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -39,7 +38,8 @@
         datacenter: "{{ datacenter_name }}"
         folder: "{{ vm_folder }}"
         cluster: "{{ cluster_name }}"
-        state: poweredoff # Create VM in an offline state first
+        # FIXED: Changed state from 'poweredoff' to the valid creation state 'present'
+        state: present 
         guest_id: "{{ vm_guest_id }}"
         hardware:
           memory_mb: "{{ vm_memory_mb }}"
@@ -56,10 +56,9 @@
           - name: "{{ network_name }}"
             type: vmxnet3
             start_connected: true
-        wait_for_ip_address: no # Not applicable since state is poweredoff
+        wait_for_ip_address: no
 
     - name: Power on the VM to start RHEL installation
-      # vmware.vmware.vm_powerstate is correct
       vmware.vmware.vm_powerstate:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
