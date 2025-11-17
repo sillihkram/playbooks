@@ -21,7 +21,7 @@
     vm_disk_size_gb: 60
     vm_scsi_type: "paravirtual"
 
-tasks:
+  tasks:
     - name: Create RHEL9 virtual machine
       community.vmware.vmware_guest:
         hostname: "{{ vcenter_hostname }}"
