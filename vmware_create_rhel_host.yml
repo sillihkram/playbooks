@@ -21,7 +21,6 @@
     vm_memory_mb: 8192                             # 8GB RAM
     vm_num_cpus: 4
     vm_disk_size_gb: 60
-    # The 'vmware.vmware.vm' module uses a list of controllers, but we can simplify here
     vm_scsi_type: "pvscsi"                         
 
     # --- NETWORK & INSTALL MEDIA ---
@@ -43,38 +42,35 @@
         state: present 
         guest_id: "{{ vm_guest_id }}"
         
-        # --- NEW HARDWARE CONFIGURATION STRUCTURE ---
-        # 1. CPU and Memory are now top-level parameters
+        # --- HARDWARE CONFIGURATION ---
         cpu: "{{ vm_num_cpus }}"
-        memory: "{{ vm_memory_mb }}" # Note: module expects MB, which matches your variable
+        memory: "{{ vm_memory_mb }}"
         
-        # 2. SCSI Controller is now defined via scsi_controllers (list of dicts)
+        # 1. FIXED: SCSI Controller now includes the required 'bus_number' and 'label'
         scsi_controllers:
-          - type: "{{ vm_scsi_type }}" # e.g., pvscsi
+          - type: "{{ vm_scsi_type }}" 
+            bus_number: 0              
+            label: 'SCSI Controller 0' 
 
-        # 3. Disks is now PLURAL (disks)
+        # 2. Disks (controller_key must match the key of the SCSI controller, which is usually 1000)
         disks:
           - size_gb: "{{ vm_disk_size_gb }}"
             type: thin
             datastore: "{{ datastore_name }}"
-            # Link disk to the PVSCSI controller created above (default key '0')
+            # Key 1000 refers to the first SCSI controller in the inventory model
             controller_key: 1000 
 
-        # 4. CDROM is now PLURAL (cdroms)
+        # 3. CDROMs (controller_key 200 refers to the first IDE controller)
         cdroms:
           - type: iso
             iso_path: "{{ iso_datastore_path }}"
-            # Link CDROM to the default IDE controller (key 200)
             controller_key: 200 
 
-        # 5. Networks is now PLURAL (network_adapters)
+        # 4. Network Adapters
         network_adapters:
           - name: "{{ network_name }}"
             type: vmxnet3
-            state: present # Must be present if creating
-            
-        # 6. Removing unsupported wait_for_ip_address: no
-        # --- END NEW HARDWARE CONFIGURATION STRUCTURE ---
+            state: present 
 
     - name: Power on the VM to start RHEL installation
       vmware.vmware.vm_powerstate:
