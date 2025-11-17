@@ -7,9 +7,9 @@ collections:
     # No version specified, will install latest stable
 
   - name: vmware.vmware
-    version: "2.5.0"
+    #version: "2.5.0"
 
   - name: cloud.vmware_ops
-    version: "1.9.0"
+    #version: "1.9.0"
 
   - name: community.postgresql
