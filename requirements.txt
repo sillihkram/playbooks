@@ -1,7 +1,8 @@
-# Python dependencies required by the community.vmware collection
+pyVmomi>=8.0.3.0.1
+vmware-vcenter
 
 # Fixes the ImportError by ensuring a modern, compatible version of pyVmomi is installed.
-pyvmomi>=7.0.0
+# pyvmomi>=7.0.0
 
 # Other common dependencies for the VMware collection (often good practice to include)
 requests>=2.25.1
