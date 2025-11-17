@@ -9,7 +9,7 @@
     vcenter_username: "{{ vcenter_admin }}@{{ vcenter_hostname }}"
     vcenter_password: "your_password"
     datacenter_name: "Datacenter"
-    cluster_name: "{{ vcenter_hostname }}" # or host system name if ESXi standalone
+    cluster_name: "{{ vcenter_hostname }}"
     datastore_name: "datastore1"
     iso_datastore_path: "[nas00] iso/rhel9_network_install.iso"
     network_name: "VM Network"
@@ -38,24 +38,21 @@
           memory_mb: "{{ vm_memory_mb }}"
           num_cpus: "{{ vm_num_cpus }}"
           scsi: "{{ vm_scsi_type }}"
-        
         disk:
           - size_gb: "{{ vm_disk_size_gb }}"
             type: thin
             datastore: "{{ datastore_name }}"
-            
         cdrom:
-          - type: iso 
+          - type: iso
             iso_path: "{{ iso_datastore_path }}"
-            
         networks:
           - name: "{{ network_name }}"
             type: vmxnet3
             start_connected: true
         wait_for_ip_address: no
-        
+
     - name: Power on the VM
-      vmware.vmware_guest_powerstate:    
+      vmware.vmware.vm_powerstate: # CORRECTED MODULE NAME
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
