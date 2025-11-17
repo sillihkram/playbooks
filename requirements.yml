@@ -1,15 +1,13 @@
 ---
 collections:
   - name: ansible.windows
-    # No version specified, assumes latest stable from Galaxy/Hub
-
-  #- name: community.vmware
-    # No version specified, will install latest stable
+    # version: 
 
   - name: vmware.vmware
-    #version: "2.5.0"
+    # version: "2.5.0"
 
-  #- name: cloud.vmware_ops
-    #version: "1.9.0"
+  - name: cloud.vmware_ops
+    # version: "1.9.0"
 
   #- name: community.postgresql
+  #- name: community.vmware
