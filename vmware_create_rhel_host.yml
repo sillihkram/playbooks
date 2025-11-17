@@ -23,7 +23,7 @@
 
   tasks:
     - name: Create RHEL9 virtual machine
-      community.vmware.vmware_guest:
+      vmware.vmware_guest:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
