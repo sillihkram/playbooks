@@ -54,7 +54,6 @@
             start_connected: true
         wait_for_ip_address: no
         
-# FULLY DEFINED SECOND TASK
     - name: Power on the VM
       vmware.vmware_guest_powerstate:    
         hostname: "{{ vcenter_hostname }}"
