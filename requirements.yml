@@ -1,14 +1,15 @@
 ---
 collections:
-- ansible.windows
-- community.vmware
-- vmware.vmware
-  version: "2.5.0"
-- cloud.vmware_ops:
-  version: "1.9.0"
-- community.postgresql
+  - name: ansible.windows
+    # No version specified, assumes latest stable from Galaxy/Hub
 
-# Note: this requirements.yml file is used to specify what Ansible collections are
-# needed to launch playbooks in this project.
-#pyVmomi>=6.7
-#git+https://github.com/vmware/vsphere-automation-sdk-python.git ; python_version >= '2.7'  # Python 2.6 is not supported
+  - name: community.vmware
+    # No version specified, will install latest stable
+
+  - name: vmware.vmware
+    version: "2.5.0"
+
+  - name: cloud.vmware_ops
+    version: "1.9.0"
+
+  - name: community.postgresql
