@@ -2,28 +2,35 @@
 - name: Provision RHEL9 VM on VMware ESXi
   hosts: localhost
   gather_facts: no
+  # Requires vmware.vmware collection to be installed in the Execution Environment
 
   vars:
-    vcenter_hostname: "your-esxi-or-vcenter-host"
+    # --- CONNECTION VARIABLES (MUST BE UPDATED) ---
+    vcenter_hostname: "your-esxi-or-vcenter-host"  # e.g., vcenter.yourdomain.local or 192.168.1.10
     vcenter_admin: "root"
     vcenter_username: "{{ vcenter_admin }}@{{ vcenter_hostname }}"
-    vcenter_password: "your_password"
-    datacenter_name: "Datacenter"
-    cluster_name: "{{ vcenter_hostname }}"
-    datastore_name: "datastore1"
-    iso_datastore_path: "[nas00] iso/rhel9_network_install.iso"
-    network_name: "VM Network"
+    vcenter_password: "your_password"              # SECURE THIS IN AN ANSIBLE VAULT!
+    datacenter_name: "Datacenter"                  # The name of your vSphere Datacenter
+    cluster_name: "{{ vcenter_hostname }}"         # Use Cluster name or ESXi hostname for standalone ESXi
+    datastore_name: "datastore1"                   # Name of the datastore for the VM disk
+    
+    # --- VM SPECIFICATION VARIABLES ---
     vm_name: "RHEL9-VM"
-    vm_folder: "/"
-    vm_guest_id: "rhel9_64Guest"
-    vm_memory_mb: 8192
+    vm_folder: "/"                                 # Root VM folder, use '/DataCenterName/vm' if using vCenter
+    vm_guest_id: "rhel9_64Guest"                   # Guest OS ID for RHEL 9 (required)
+    vm_memory_mb: 8192                             # 8GB RAM
     vm_num_cpus: 4
     vm_disk_size_gb: 60
-    vm_scsi_type: "paravirtual"
+    vm_scsi_type: "paravirtual"                    # Highly recommended for RHEL
+
+    # --- NETWORK & INSTALL MEDIA ---
+    network_name: "VM Network"                     # Name of the port group/network interface
+    iso_datastore_path: "[nas00] iso/rhel9_network_install.iso" # Full datastore path to your ISO
 
   tasks:
-    - name: Create RHEL9 virtual machine
-      vmware.vmware_guest:
+    - name: Create RHEL9 virtual machine and configure hardware
+      # FIXED: Module name changed from vmware.vmware.vm_guest to vmware.vmware.vm
+      vmware.vmware.vm:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
@@ -32,7 +39,7 @@
         datacenter: "{{ datacenter_name }}"
         folder: "{{ vm_folder }}"
         cluster: "{{ cluster_name }}"
-        state: poweredoff
+        state: poweredoff # Create VM in an offline state first
         guest_id: "{{ vm_guest_id }}"
         hardware:
           memory_mb: "{{ vm_memory_mb }}"
@@ -49,10 +56,11 @@
           - name: "{{ network_name }}"
             type: vmxnet3
             start_connected: true
-        wait_for_ip_address: no
+        wait_for_ip_address: no # Not applicable since state is poweredoff
 
-    - name: Power on the VM
-      vmware.vmware.vm_powerstate: # CORRECTED MODULE NAME
+    - name: Power on the VM to start RHEL installation
+      # vmware.vmware.vm_powerstate is correct
+      vmware.vmware.vm_powerstate:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
