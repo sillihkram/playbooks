@@ -1,8 +1,10 @@
 ---
 collections:
 - ansible.windows
-- community.vmware
+- redhat.rhel_system_roles
+# - community.vmware
 - vmware.vmware
+- cloud.vmware_ops
 - community.postgresql
 
 # Note: this requirements.yml file is used to specify what Ansible collections are
