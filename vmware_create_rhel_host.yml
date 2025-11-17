@@ -56,7 +56,7 @@
         
 # FULLY DEFINED SECOND TASK
     - name: Power on the VM
-      community.vmware.vmware_guest_powerstate:
+      vmware.vmware_guest_powerstate:    
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
