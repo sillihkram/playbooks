@@ -1,5 +1,5 @@
 ---
-- name: Deploy VMs on standalone ESXi using folder copy method
+- name: Clone VMs on standalone ESXi (AAP safe)
   hosts: localhost
   connection: local
   gather_facts: no
@@ -10,9 +10,9 @@
     vmware_password: "{{ vmware_password }}"
 
     datacenter: ha-datacenter
-    datastore: datastore1
+    folder: "/ha-datacenter/vm"
 
-    base_vm_path: "RHEL9-CIS_L1"
+    source_vm: "RHEL9-CIS_L1"
 
     vms:
       - graffias.openincite.net
@@ -25,52 +25,39 @@
 
   tasks:
 
-    # ------------------------------------------------------------
-    # COPY ENTIRE VM DIRECTORY (CRITICAL FIX)
-    # ------------------------------------------------------------
-    - name: Copy VM folder for each instance
-      community.vmware.vsphere_copy:
+    - name: Clone VM from existing golden VM (correct ESXi method)
+      community.vmware.vmware_guest:
         hostname: "{{ vmware_hostname }}"
         username: "{{ vmware_username }}"
         password: "{{ vmware_password }}"
         validate_certs: false
+        port: 443
 
         datacenter: "{{ datacenter }}"
-        datastore: "{{ datastore }}"
-
-        src: "{{ base_vm_path }}"
-        dest: "{{ item }}"
-
-      loop: "{{ vms }}"
-      delegate_to: localhost
-
-    # ------------------------------------------------------------
-    # REGISTER VMX FILE (THIS IS WHAT WAS MISSING BEFORE)
-    # ------------------------------------------------------------
-    - name: Register VM from copied VMX
-      community.vmware.vmware_guest_register_operation:
-        hostname: "{{ vmware_hostname }}"
-        username: "{{ vmware_username }}"
-        password: "{{ vmware_password }}"
-        validate_certs: false
-
-        datacenter: "{{ datacenter }}"
+        folder: "{{ folder }}"
 
         name: "{{ item }}"
-        path: "[{{ datastore }}] {{ item }}/{{ base_vm_path }}.vmx"
+        state: poweredoff
+
+        is_template: false
+        resource_pool: Resources
+
+        clone_from_vm: "{{ source_vm }}"
+
+        hardware:
+          memory_mb: 8192
+          num_cpus: 4
 
       loop: "{{ vms }}"
       delegate_to: localhost
 
-    # ------------------------------------------------------------
-    # POWER ON
-    # ------------------------------------------------------------
     - name: Power on VMs
       community.vmware.vmware_guest_powerstate:
         hostname: "{{ vmware_hostname }}"
         username: "{{ vmware_username }}"
         password: "{{ vmware_password }}"
         validate_certs: false
+        port: 443
 
         name: "{{ item }}"
         state: powered-on
