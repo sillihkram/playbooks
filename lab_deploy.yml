@@ -1,5 +1,5 @@
 ---
-- name: Deploy and configure RHEL9 CIS VMs on ESXi
+- name: Deploy RHEL9 CIS VMs from template on ESXi
   hosts: localhost
   connection: local
   gather_facts: no
@@ -18,13 +18,16 @@
     vmware_username: root
     vmware_password: "{{ vmware_password }}"
 
+    datacenter: ha-datacenter
+    folder: "/ha-datacenter/vm"
     datastore: datastore1
     network_name: "VM Network"
 
+    template_name: "RHEL9-CIS_L1-template"
+
     vm_cpu: 4
     vm_ram_mb: 8192
-
-    base_disk: "[datastore1] RHEL9-CIS_L1/RHEL9-CIS_L1.vmdk"
+    vm_disk_gb: 100
 
   tasks:
 
@@ -33,11 +36,12 @@
         msg:
           - "ESXi: {{ vmware_hostname }}"
           - "User: {{ vmware_username }}"
+          - "Template: {{ template_name }}"
 
     # ------------------------------------------------------------
-    # CREATE VM FROM EXISTING DISK
+    # CLONE VMs FROM TEMPLATE
     # ------------------------------------------------------------
-    - name: Create VM and attach existing disk
+    - name: Clone VM from template
       community.vmware.vmware_guest:
         hostname: "{{ vmware_hostname }}"
         username: "{{ vmware_username }}"
@@ -45,20 +49,21 @@
         validate_certs: false
         port: 443
 
-        datacenter: ha-datacenter
-        folder: "/ha-datacenter/vm"
+        datacenter: "{{ datacenter }}"
+        folder: "{{ folder }}"
+        datastore: "{{ datastore }}"
 
         name: "{{ item }}"
+        template: "{{ template_name }}"
         state: poweredoff
-        guest_id: rhel9_64Guest
 
         hardware:
           memory_mb: "{{ vm_ram_mb }}"
           num_cpus: "{{ vm_cpu }}"
-          scsi: paravirtual
 
         disk:
-          - filename: "{{ base_disk }}"
+          - size_gb: "{{ vm_disk_gb }}"
+            type: thin
 
         networks:
           - name: "{{ network_name }}"
