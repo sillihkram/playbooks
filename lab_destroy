@@ -1,0 +1,62 @@
+---
+- name: Destroy lab VMs from ESXi datastore
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    esxi_host: 192.168.1.20
+    esxi_user: root
+    esxi_password: "{{ vmware_password }}"
+
+    base_path: "/vmfs/volumes/datastore1"
+
+    vms:
+      - graffias.openincite.net
+      - acrab.openincite.net
+      - jabbah.openincite.net
+      - alniyat.openincite.net
+      - apollyon.openincite.net
+      - shaula.openincite.net
+      - lesath.openincite.net
+
+  tasks:
+
+    # ------------------------------------------------------------
+    # 1. GET VMID FROM ESXi
+    # ------------------------------------------------------------
+    - name: Get VM IDs
+      ansible.builtin.shell: |
+        sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} \
+        "vim-cmd vmsvc/getallvms | awk '$0 ~ /{{ item }}/ {print $1}'"
+      register: vmids
+      loop: "{{ vms }}"
+
+    # ------------------------------------------------------------
+    # 2. POWER OFF VMs (IGNORE ERRORS IF ALREADY OFF)
+    # ------------------------------------------------------------
+    - name: Power off VMs
+      ansible.builtin.shell: |
+        sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} \
+        "vim-cmd vmsvc/power.off {{ item.stdout }}"
+      loop: "{{ vmids.results }}"
+      when: item.stdout != ""
+
+    # ------------------------------------------------------------
+    # 3. UNREGISTER VMS
+    # ------------------------------------------------------------
+    - name: Unregister VMs
+      ansible.builtin.shell: |
+        sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} \
+        "vim-cmd vmsvc/unregister {{ item.stdout }}"
+      loop: "{{ vmids.results }}"
+      when: item.stdout != ""
+
+    # ------------------------------------------------------------
+    # 4. DELETE VM DIRECTORIES
+    # ------------------------------------------------------------
+    - name: Delete VM folders from datastore
+      ansible.builtin.shell: |
+        sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} \
+        "rm -rf {{ base_path }}/{{ item }}"
+      loop: "{{ vms }}"
