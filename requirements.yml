@@ -1,10 +1,10 @@
 ---
 collections:
+  - name: community.vmware
+  - name: ansible.posix
+  - name: community.general
   - name: ansible.windows
-    # version: 
 
-  - name: vmware.vmware
-    # version: "2.5.0"
-
-  #- name: community.postgresql
-  #- name: community.vmware
+  # Optional but useful in your environment
+  - name: redhat.rhel_system_roles
+  - name: freeipa.ansible_freeipa
