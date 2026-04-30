@@ -30,6 +30,7 @@
         msg:
           - "Host: {{ vmware_hostname }}"
           - "User: {{ vmware_username }}"
+          
       
     - name: Create VM directory on datastore
       community.vmware.vsphere_file:
