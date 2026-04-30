@@ -28,14 +28,14 @@
 
   tasks:
 
-    - name: Debug connection
+    - name: Debug VMware connection
       debug:
         msg:
           - "ESXi: {{ vmware_hostname }}"
           - "User: {{ vmware_username }}"
 
     # ------------------------------------------------------------
-    # CREATE VM USING EXISTING VMDK (NO COPYING)
+    # CREATE VM FROM EXISTING DISK
     # ------------------------------------------------------------
     - name: Create VM and attach existing disk
       community.vmware.vmware_guest:
@@ -44,6 +44,9 @@
         password: "{{ vmware_password }}"
         validate_certs: false
         port: 443
+
+        datacenter: ha-datacenter
+        folder: "/ha-datacenter/vm"
 
         name: "{{ item }}"
         state: poweredoff
@@ -55,7 +58,7 @@
           scsi: paravirtual
 
         disk:
-          - filename: "[datastore1] RHEL9-CIS_L1/RHEL9-CIS_L1.vmdk"
+          - filename: "{{ base_disk }}"
 
         networks:
           - name: "{{ network_name }}"
