@@ -41,11 +41,10 @@
         port: 443
 
         datacenter: ha-datacenter
-        datastore: "{{ datastore }}"
+        datastore: datastore1
         
         src: "{{ source_vmdk_dir }}/{{ source_vmdk_name }}"
         dest: "{{ item }}/{{ item }}.vmdk"
-        force: true
       loop: "{{ vms }}"
 
     - name: Create VM and attach disk
