@@ -55,7 +55,7 @@
           scsi: paravirtual
 
         disk:
-          - filename: "{{ base_disk }}"
+          - filename: "[datastore1] RHEL9-CIS_L1/RHEL9-CIS_L1.vmdk"
 
         networks:
           - name: "{{ network_name }}"
