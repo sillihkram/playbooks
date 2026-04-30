@@ -2,6 +2,7 @@
 - name: Deploy and configure RHEL9 CIS VMs on ESXi
   hosts: esxi
   gather_facts: no
+  connection: local
 
   vars:
     vms:
