@@ -38,9 +38,13 @@
         username: "{{ vmware_username }}"
         password: "{{ vmware_password }}"
         validate_certs: false
+        port: 443
 
-        src: "[{{ datastore }}] {{ source_vmdk_dir }}/{{ source_vmdk_name }}"
-        dest: "[{{ datastore }}] {{ item }}/{{ item }}.vmdk"
+        datacenter: ha-datacenter
+        datastore: "{{ datastore }}"
+        
+        src: "{{ source_vmdk_dir }}/{{ source_vmdk_name }}"
+        dest: "{{ item }}/{{ item }}.vmdk"
         force: true
       loop: "{{ vms }}"
 
