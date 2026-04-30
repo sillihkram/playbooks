@@ -1,5 +1,5 @@
 ---
-- name: ESXi VM cloning with full clean rename (Option 2)
+- name: Deploy RHEL9 CIS VMs on standalone ESXi using vmkfstools
   hosts: localhost
   connection: local
   gather_facts: no
@@ -9,6 +9,7 @@
     esxi_user: root
     esxi_password: "{{ vmware_password }}"
 
+    datastore: "datastore1"
     base_path: "/vmfs/volumes/datastore1"
     base_vm: "RHEL9-CIS_L1"
 
@@ -24,55 +25,83 @@
   tasks:
 
     # ------------------------------------------------------------
-    # 1. CLONE BASE VM FOLDER
+    # 1. CREATE VM FOLDERS
     # ------------------------------------------------------------
-    - name: Clone base VM directory
+    - name: Create VM directories
       ansible.builtin.shell: |
         sshpass -p "{{ esxi_password }}" ssh -o StrictHostKeyChecking=no {{ esxi_user }}@{{ esxi_host }} \
-        "cp -r {{ base_path }}/{{ base_vm }} {{ base_path }}/{{ item }}"
+        "mkdir -p {{ base_path }}/{{ item }}"
       loop: "{{ vms }}"
 
     # ------------------------------------------------------------
-    # 2. RENAME ALL VM FILES INSIDE EACH FOLDER
+    # 2. CLONE DISK USING VMKFSTOOLS (THIN PROVISIONED)
     # ------------------------------------------------------------
-    - name: Rename VM files to match hostname
+    - name: Clone base disk (thin provisioned)
       ansible.builtin.shell: |
         sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} "
-        cd {{ base_path }}/{{ item }} &&
-
-        mv {{ base_vm }}.vmx {{ item }}.vmx &&
-        mv {{ base_vm }}.vmdk {{ item }}.vmdk &&
-        mv {{ base_vm }}-flat.vmdk {{ item }}-flat.vmdk &&
-        mv {{ base_vm }}.nvram {{ item }}.nvram || true
+        vmkfstools -i \
+        {{ base_path }}/{{ base_vm }}/{{ base_vm }}.vmdk \
+        {{ base_path }}/{{ item }}/{{ item }}.vmdk \
+        -d thin
         "
       loop: "{{ vms }}"
 
     # ------------------------------------------------------------
-    # 3. FIX VMX INTERNAL DISK REFERENCES
+    # 3. CREATE VMX FILES
     # ------------------------------------------------------------
-    - name: Update VMX disk references
+    - name: Create VMX configuration
       ansible.builtin.shell: |
         sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} "
-        sed -i 's/{{ base_vm }}/{{ item }}/g' {{ base_path }}/{{ item }}/{{ item }}.vmx
+        cat > {{ base_path }}/{{ item }}/{{ item }}.vmx <<EOF
+        config.version = \"8\"
+        virtualHW.version = \"19\"
+        displayName = \"{{ item }}\"
+        guestOS = \"rhel9_64Guest\"
+
+        memsize = \"8192\"
+        numvcpus = \"4\"
+
+        scsi0.present = \"TRUE\"
+        scsi0.virtualDev = \"lsilogic\"
+
+        scsi0:0.present = \"TRUE\"
+        scsi0:0.fileName = \"{{ item }}.vmdk\"
+
+        ethernet0.present = \"TRUE\"
+        ethernet0.networkName = \"VM Network\"
+        ethernet0.addressType = \"generated\"
+
+        EOF
         "
       loop: "{{ vms }}"
 
     # ------------------------------------------------------------
-    # 4. ENSURE VMX IS VALID (basic check)
+    # 4. REGISTER VMS IN ESXI
     # ------------------------------------------------------------
-    - name: Validate VMX exists
-      ansible.builtin.shell: |
-        sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} \
-        "test -f {{ base_path }}/{{ item }}/{{ item }}.vmx && echo OK"
-      register: vmx_check
-      loop: "{{ vms }}"
-
-    # ------------------------------------------------------------
-    # 5. REGISTER VM WITH ESXI
-    # ------------------------------------------------------------
-    - name: Register VM from VMX
+    - name: Register VM
       ansible.builtin.shell: |
         sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} "
         vim-cmd solo/registervm {{ base_path }}/{{ item }}/{{ item }}.vmx
         "
+      loop: "{{ vms }}"
+
+    # ------------------------------------------------------------
+    # 5. POWER ON VMS
+    # ------------------------------------------------------------
+    - name: Power on VMs
+      ansible.builtin.shell: |
+        sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} "
+        vmid=$(vim-cmd vmsvc/getallvms | awk '$0 ~ /{{ item }}/ {print $1}')
+        vim-cmd vmsvc/power.on $vmid
+        "
+      loop: "{{ vms }}"
+
+    # ------------------------------------------------------------
+    # 6. WAIT FOR SSH (POST BOOT)
+    # ------------------------------------------------------------
+    - name: Wait for SSH
+      ansible.builtin.wait_for:
+        host: "{{ item }}"
+        port: 22
+        timeout: 900
       loop: "{{ vms }}"
