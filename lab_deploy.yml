@@ -16,23 +16,26 @@
 
     datastore: datastore1
     network_name: "VM Network"
+
     source_vmdk_dir: "RHEL9-CIS_L1"
     source_vmdk_name: "RHEL9-CIS_L1.vmdk"
+
     vm_cpu: 4
     vm_ram_mb: 8192
     vm_disk_gb: 100
-    vm_folder: ""
 
   tasks:
-  
-    - name: Debug VMware vars
+
+    - name: Debug VMware connection
       debug:
         msg:
           - "Host: {{ vmware_hostname }}"
           - "User: {{ vmware_username }}"
-          
-      
-    - name: Copy base VMDK for each VM (creates directory automatically)
+
+    # ------------------------------------------------------------
+    # COPY DISK (NO DIRECTORY CREATION — ESXi handles this)
+    # ------------------------------------------------------------
+    - name: Copy base VMDK for each VM
       community.vmware.vsphere_copy:
         hostname: "{{ vmware_hostname }}"
         username: "{{ vmware_username }}"
@@ -41,18 +44,24 @@
         port: 443
 
         datacenter: ha-datacenter
-        datastore: datastore1
-        
+        datastore: "{{ datastore }}"
+
         src: "{{ source_vmdk_dir }}/{{ source_vmdk_name }}"
         dest: "{{ item }}/{{ item }}.vmdk"
-      loop: "{{ vms }}"
 
+      loop: "{{ vms }}"
+      delegate_to: localhost
+
+    # ------------------------------------------------------------
+    # CREATE VM
+    # ------------------------------------------------------------
     - name: Create VM and attach disk
       community.vmware.vmware_guest:
         hostname: "{{ vmware_hostname }}"
         username: "{{ vmware_username }}"
         password: "{{ vmware_password }}"
         validate_certs: false
+        port: 443
 
         name: "{{ item }}"
         state: poweredoff
@@ -71,29 +80,41 @@
             device_type: vmxnet3
 
       loop: "{{ vms }}"
+      delegate_to: localhost
 
-    - name: Ensure disk is expanded to 100 GiB
+    # ------------------------------------------------------------
+    # EXPAND DISK
+    # ------------------------------------------------------------
+    - name: Ensure disk is 100 GiB
       community.vmware.vmware_guest_disk:
         hostname: "{{ vmware_hostname }}"
         username: "{{ vmware_username }}"
         password: "{{ vmware_password }}"
         validate_certs: false
+        port: 443
 
         name: "{{ item }}"
         disk:
           - unit_number: 0
             size_gb: "{{ vm_disk_gb }}"
             state: present
-      loop: "{{ vms }}"
 
+      loop: "{{ vms }}"
+      delegate_to: localhost
+
+    # ------------------------------------------------------------
+    # POWER ON
+    # ------------------------------------------------------------
     - name: Power on VMs
       community.vmware.vmware_guest_powerstate:
         hostname: "{{ vmware_hostname }}"
         username: "{{ vmware_username }}"
         password: "{{ vmware_password }}"
         validate_certs: false
+        port: 443
 
         name: "{{ item }}"
         state: powered-on
 
       loop: "{{ vms }}"
+      delegate_to: localhost
