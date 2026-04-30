@@ -1,0 +1,41 @@
+- name: Post-provision configuration
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  tasks:
+
+    - name: Set hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Ensure /etc/hosts updated
+      lineinfile:
+        path: /etc/hosts
+        line: "127.0.0.1 {{ inventory_hostname }} localhost"
+        regexp: "^127.0.0.1"
+
+    - name: Reset machine-id (force uniqueness)
+      file:
+        path: /etc/machine-id
+        state: absent
+
+    - name: Recreate machine-id
+      command: systemd-machine-id-setup
+
+    - name: Regenerate SSH host keys
+      shell: |
+        rm -f /etc/ssh/ssh_host_*
+        ssh-keygen -A
+
+    - name: Restart sshd
+      service:
+        name: sshd
+        state: restarted
+
+    - name: Grow root filesystem (XFS assumed)
+      shell: |
+        growpart /dev/sda 3 || true
+        xfs_growfs /
+      args:
+        executable: /bin/bash
