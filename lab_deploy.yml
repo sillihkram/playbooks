@@ -16,18 +16,21 @@
 
     datastore: datastore1
     network_name: "VM Network"
-
     source_vmdk_dir: "RHEL9-CIS_L1"
     source_vmdk_name: "RHEL9-CIS_L1.vmdk"
-
     vm_cpu: 4
     vm_ram_mb: 8192
     vm_disk_gb: 100
-
     vm_folder: ""
 
   tasks:
-
+  
+    - name: Debug VMware vars
+      debug:
+        msg:
+          - "Host: {{ vmware_hostname }}"
+          - "User: {{ vmware_username }}"
+      
     - name: Create VM directory on datastore
       community.vmware.vsphere_file:
         hostname: "{{ vmware_hostname }}"
