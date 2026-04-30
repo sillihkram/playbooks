@@ -1,8 +1,8 @@
 ---
 - name: Deploy and configure RHEL9 CIS VMs on ESXi
-  hosts: esxi
-  gather_facts: no
+  hosts: localhost
   connection: local
+  gather_facts: no
 
   vars:
     vms:
@@ -30,9 +30,9 @@
 
     - name: Create VM directory on datastore
       community.vmware.vsphere_file:
-        hostname: "{{ ansible_host }}"
-        username: "{{ ansible_user }}"
-        password: "{{ ansible_password }}"
+        hostname: "{{ vmware_hostname }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
         validate_certs: false
         datacenter: ha-datacenter
         datastore: "{{ datastore }}"
@@ -42,9 +42,9 @@
 
     - name: Copy base VMDK for each VM (full clone)
       community.vmware.vsphere_copy:
-        hostname: "{{ ansible_host }}"
-        username: "{{ ansible_user }}"
-        password: "{{ ansible_password }}"
+        hostname: "{{ vmware_hostname }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
         validate_certs: false
 
         src: "[{{ datastore }}] {{ source_vmdk_dir }}/{{ source_vmdk_name }}"
@@ -53,9 +53,9 @@
 
     - name: Create VM and attach disk
       community.vmware.vmware_guest:
-        hostname: "{{ ansible_host }}"
-        username: "{{ ansible_user }}"
-        password: "{{ ansible_password }}"
+        hostname: "{{ vmware_hostname }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
         validate_certs: false
 
         name: "{{ item }}"
@@ -78,9 +78,9 @@
 
     - name: Ensure disk is expanded to 100 GiB
       community.vmware.vmware_guest_disk:
-        hostname: "{{ ansible_host }}"
-        username: "{{ ansible_user }}"
-        password: "{{ ansible_password }}"
+        hostname: "{{ vmware_hostname }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
         validate_certs: false
 
         name: "{{ item }}"
@@ -92,9 +92,9 @@
 
     - name: Power on VMs
       community.vmware.vmware_guest_powerstate:
-        hostname: "{{ ansible_host }}"
-        username: "{{ ansible_user }}"
-        password: "{{ ansible_password }}"
+        hostname: "{{ vmware_hostname }}"
+        username: "{{ vmware_username }}"
+        password: "{{ vmware_password }}"
         validate_certs: false
 
         name: "{{ item }}"
