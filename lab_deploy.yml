@@ -80,8 +80,9 @@
     # ------------------------------------------------------------
     - name: Register VM
       ansible.builtin.shell: |
-        sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} "
-        vim-cmd solo/registervm {{ base_path }}/{{ item }}/{{ item }}.vmx
+        sshpass -p "{{ esxi_password }}" ssh -o StrictHostKeyChecking=no {{ esxi_user }}@{{ esxi_host }} "
+        VMID=\$(/bin/vim-cmd vmsvc/getallvms | awk '\$0 ~ /{{ item }}/ {print \$1}')
+        /bin/vim-cmd vmsvc/power.on \$VMID
         "
       loop: "{{ vms }}"
 
