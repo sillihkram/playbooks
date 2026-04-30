@@ -14,48 +14,30 @@
       - shaula.openincite.net
       - lesath.openincite.net
 
+    vmware_hostname: 192.168.1.20
+    vmware_username: root
+    vmware_password: "{{ vmware_password }}"
+
     datastore: datastore1
     network_name: "VM Network"
 
-    source_vmdk_dir: "RHEL9-CIS_L1"
-    source_vmdk_name: "RHEL9-CIS_L1.vmdk"
-
     vm_cpu: 4
     vm_ram_mb: 8192
-    vm_disk_gb: 100
+
+    base_disk: "[datastore1] RHEL9-CIS_L1/RHEL9-CIS_L1.vmdk"
 
   tasks:
 
-    - name: Debug VMware connection
+    - name: Debug connection
       debug:
         msg:
-          - "Host: {{ vmware_hostname }}"
+          - "ESXi: {{ vmware_hostname }}"
           - "User: {{ vmware_username }}"
 
     # ------------------------------------------------------------
-    # COPY DISK (NO DIRECTORY CREATION — ESXi handles this)
+    # CREATE VM USING EXISTING VMDK (NO COPYING)
     # ------------------------------------------------------------
-    - name: Copy base VMDK for each VM
-      community.vmware.vsphere_copy:
-        hostname: "{{ vmware_hostname }}"
-        username: "{{ vmware_username }}"
-        password: "{{ vmware_password }}"
-        validate_certs: false
-        port: 443
-
-        datacenter: ha-datacenter
-        datastore: "{{ datastore }}"
-
-        src: "{{ source_vmdk_dir }}/{{ source_vmdk_name }}"
-        dest: "{{ item }}/{{ item }}.vmdk"
-
-      loop: "{{ vms }}"
-      delegate_to: localhost
-
-    # ------------------------------------------------------------
-    # CREATE VM
-    # ------------------------------------------------------------
-    - name: Create VM and attach disk
+    - name: Create VM and attach existing disk
       community.vmware.vmware_guest:
         hostname: "{{ vmware_hostname }}"
         username: "{{ vmware_username }}"
@@ -73,7 +55,7 @@
           scsi: paravirtual
 
         disk:
-          - filename: "[{{ datastore }}] {{ item }}/{{ item }}.vmdk"
+          - filename: "{{ base_disk }}"
 
         networks:
           - name: "{{ network_name }}"
@@ -83,27 +65,7 @@
       delegate_to: localhost
 
     # ------------------------------------------------------------
-    # EXPAND DISK
-    # ------------------------------------------------------------
-    - name: Ensure disk is 100 GiB
-      community.vmware.vmware_guest_disk:
-        hostname: "{{ vmware_hostname }}"
-        username: "{{ vmware_username }}"
-        password: "{{ vmware_password }}"
-        validate_certs: false
-        port: 443
-
-        name: "{{ item }}"
-        disk:
-          - unit_number: 0
-            size_gb: "{{ vm_disk_gb }}"
-            state: present
-
-      loop: "{{ vms }}"
-      delegate_to: localhost
-
-    # ------------------------------------------------------------
-    # POWER ON
+    # POWER ON VMs
     # ------------------------------------------------------------
     - name: Power on VMs
       community.vmware.vmware_guest_powerstate:
