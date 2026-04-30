@@ -1,5 +1,5 @@
 ---
-- name: ESXi provisioning + RHEL post configuration
+- name: ESXi VM cloning with full clean rename (Option 2)
   hosts: localhost
   connection: local
   gather_facts: no
@@ -24,66 +24,55 @@
   tasks:
 
     # ------------------------------------------------------------
-    # 1. CLONE VMS ON ESXI
+    # 1. CLONE BASE VM FOLDER
     # ------------------------------------------------------------
-    - name: Clone VM directory on ESXi
+    - name: Clone base VM directory
       ansible.builtin.shell: |
         sshpass -p "{{ esxi_password }}" ssh -o StrictHostKeyChecking=no {{ esxi_user }}@{{ esxi_host }} \
         "cp -r {{ base_path }}/{{ base_vm }} {{ base_path }}/{{ item }}"
       loop: "{{ vms }}"
 
     # ------------------------------------------------------------
-    # 2. RENAME VM FILES
+    # 2. RENAME ALL VM FILES INSIDE EACH FOLDER
     # ------------------------------------------------------------
-    - name: Rename VM files
+    - name: Rename VM files to match hostname
       ansible.builtin.shell: |
-        sshpass -p "{{ esxi_password }}" ssh -o StrictHostKeyChecking=no {{ esxi_user }}@{{ esxi_host }} "
+        sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} "
         cd {{ base_path }}/{{ item }} &&
-        mv {{ base_vm }}.vmx {{ item }}.vmx || true &&
-        mv {{ base_vm }}.nvram {{ item }}.nvram || true &&
-        mv {{ base_vm }}.vmdk {{ item }}.vmdk || true &&
-        mv {{ base_vm }}-flat.vmdk {{ item }}-flat.vmdk || true
+
+        mv {{ base_vm }}.vmx {{ item }}.vmx &&
+        mv {{ base_vm }}.vmdk {{ item }}.vmdk &&
+        mv {{ base_vm }}-flat.vmdk {{ item }}-flat.vmdk &&
+        mv {{ base_vm }}.nvram {{ item }}.nvram || true
         "
       loop: "{{ vms }}"
 
     # ------------------------------------------------------------
-    # 3. REGISTER VMS
+    # 3. FIX VMX INTERNAL DISK REFERENCES
     # ------------------------------------------------------------
-    - name: Register VM in ESXi
+    - name: Update VMX disk references
       ansible.builtin.shell: |
-        sshpass -p "{{ esxi_password }}" ssh -o StrictHostKeyChecking=no {{ esxi_user }}@{{ esxi_host }} \
-        "vim-cmd solo/registervm {{ base_path }}/{{ item }}/{{ item }}.vmx"
+        sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} "
+        sed -i 's/{{ base_vm }}/{{ item }}/g' {{ base_path }}/{{ item }}/{{ item }}.vmx
+        "
       loop: "{{ vms }}"
 
     # ------------------------------------------------------------
-    # 4. POWER ON VMS
+    # 4. ENSURE VMX IS VALID (basic check)
     # ------------------------------------------------------------
-    - name: Power on VMs
+    - name: Validate VMX exists
       ansible.builtin.shell: |
-        sshpass -p "{{ esxi_password }}" ssh -o StrictHostKeyChecking=no {{ esxi_user }}@{{ esxi_host }} \
-        "vim-cmd vmsvc/getallvms | grep {{ item }} | awk '{print \$1}' | xargs -I{} vim-cmd vmsvc/power.on {}"
+        sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} \
+        "test -f {{ base_path }}/{{ item }}/{{ item }}.vmx && echo OK"
+      register: vmx_check
       loop: "{{ vms }}"
 
     # ------------------------------------------------------------
-    # 5. WAIT FOR SSH ON GUESTS
+    # 5. REGISTER VM WITH ESXI
     # ------------------------------------------------------------
-    - name: Wait for SSH on VMs
-      ansible.builtin.wait_for:
-        host: "{{ item }}"
-        port: 22
-        timeout: 900
-      loop: "{{ vms }}"
-
-    # ------------------------------------------------------------
-    # 6. POST-CONFIGURATION (INSIDE GUESTS)
-    # ------------------------------------------------------------
-    - name: Normalize hostname + identity on VMs
+    - name: Register VM from VMX
       ansible.builtin.shell: |
-        sshpass -p "{{ vm_password }}" ssh -o StrictHostKeyChecking=no root@{{ item }} "
-        hostnamectl set-hostname {{ item }} &&
-        rm -f /etc/machine-id &&
-        systemd-machine-id-setup &&
-        rm -f /etc/ssh/ssh_host_* &&
-        ssh-keygen -A
+        sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} "
+        vim-cmd solo/registervm {{ base_path }}/{{ item }}/{{ item }}.vmx
         "
       loop: "{{ vms }}"
