@@ -1,5 +1,5 @@
 ---
-- name: Deploy RHEL9 CIS VMs on standalone ESXi
+- name: Deploy VMs on standalone ESXi using folder copy method
   hosts: localhost
   connection: local
   gather_facts: no
@@ -12,7 +12,7 @@
     datacenter: ha-datacenter
     datastore: datastore1
 
-    network_name: "VM Network"
+    base_vm_path: "RHEL9-CIS_L1"
 
     vms:
       - graffias.openincite.net
@@ -23,15 +23,12 @@
       - shaula.openincite.net
       - lesath.openincite.net
 
-    base_path: "RHEL9-CIS_L1"
-    base_disk: "RHEL9-CIS_L1.vmdk"
-
   tasks:
 
     # ------------------------------------------------------------
-    # COPY BASE DISK FOR EACH VM (IN DATASTORE ONLY)
+    # COPY ENTIRE VM DIRECTORY (CRITICAL FIX)
     # ------------------------------------------------------------
-    - name: Copy base VMDK for each VM
+    - name: Copy VM folder for each instance
       community.vmware.vsphere_copy:
         hostname: "{{ vmware_hostname }}"
         username: "{{ vmware_username }}"
@@ -41,48 +38,32 @@
         datacenter: "{{ datacenter }}"
         datastore: "{{ datastore }}"
 
-        src: "{{ base_path }}/{{ base_disk }}"
-        dest: "{{ item }}/{{ item }}.vmdk"
+        src: "{{ base_vm_path }}"
+        dest: "{{ item }}"
 
       loop: "{{ vms }}"
       delegate_to: localhost
 
     # ------------------------------------------------------------
-    # CREATE VM SHELLS
+    # REGISTER VMX FILE (THIS IS WHAT WAS MISSING BEFORE)
     # ------------------------------------------------------------
-    - name: Create VM and attach copied disk
-      community.vmware.vmware_guest:
+    - name: Register VM from copied VMX
+      community.vmware.vmware_guest_register_operation:
         hostname: "{{ vmware_hostname }}"
         username: "{{ vmware_username }}"
         password: "{{ vmware_password }}"
         validate_certs: false
-        port: 443
 
         datacenter: "{{ datacenter }}"
-        folder: "/ha-datacenter/vm"
-        datastore: "{{ datastore }}"
 
         name: "{{ item }}"
-        state: poweredoff
-        guest_id: rhel9_64Guest
-
-        hardware:
-          memory_mb: 8192
-          num_cpus: 4
-          scsi: paravirtual
-
-        disk:
-          - filename: "[{{ datastore }}] {{ item }}/{{ item }}.vmdk"
-
-        networks:
-          - name: "{{ network_name }}"
-            device_type: vmxnet3
+        path: "[{{ datastore }}] {{ item }}/{{ base_vm_path }}.vmx"
 
       loop: "{{ vms }}"
       delegate_to: localhost
 
     # ------------------------------------------------------------
-    # POWER ON VMS
+    # POWER ON
     # ------------------------------------------------------------
     - name: Power on VMs
       community.vmware.vmware_guest_powerstate:
@@ -90,7 +71,6 @@
         username: "{{ vmware_username }}"
         password: "{{ vmware_password }}"
         validate_certs: false
-        port: 443
 
         name: "{{ item }}"
         state: powered-on
