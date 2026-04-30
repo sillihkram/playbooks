@@ -32,19 +32,7 @@
           - "User: {{ vmware_username }}"
           
       
-    - name: Create VM directory on datastore
-      community.vmware.vsphere_file:
-        hostname: "{{ vmware_hostname }}"
-        username: "{{ vmware_username }}"
-        password: "{{ vmware_password }}"
-        validate_certs: false
-        datacenter: ha-datacenter
-        datastore: "{{ datastore }}"
-        path: "{{ item }}"
-        state: directory
-      loop: "{{ vms }}"
-
-    - name: Copy base VMDK for each VM (full clone)
+    - name: Copy base VMDK for each VM (creates directory automatically)
       community.vmware.vsphere_copy:
         hostname: "{{ vmware_hostname }}"
         username: "{{ vmware_username }}"
@@ -53,6 +41,7 @@
 
         src: "[{{ datastore }}] {{ source_vmdk_dir }}/{{ source_vmdk_name }}"
         dest: "[{{ datastore }}] {{ item }}/{{ item }}.vmdk"
+        force: true
       loop: "{{ vms }}"
 
     - name: Create VM and attach disk
@@ -103,4 +92,5 @@
 
         name: "{{ item }}"
         state: powered-on
+
       loop: "{{ vms }}"
