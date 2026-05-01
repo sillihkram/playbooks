@@ -88,13 +88,20 @@
     # ------------------------------------------------------------
     # 5. POWER ON VMS
     # ------------------------------------------------------------
+    # ------------------------------------------------------------
+    # 5. POWER ON VMS (FIXED CLEAN)
+    # ------------------------------------------------------------
     - name: Power on VMs
       ansible.builtin.shell: |
         sshpass -p "{{ esxi_password }}" ssh -o StrictHostKeyChecking=no {{ esxi_user }}@{{ esxi_host }} '
-          VMID=$(vim-cmd vmsvc/getallvms | awk "$2 == \"{{ item }}\" {print $1}" | head -n 1)
-          vim-cmd vmsvc/power.on "$VMID"
+          VMID=$(vim-cmd vmsvc/getallvms | grep "{{ item }}" | awk "{print \$1}" | head -n 1)
+          if [ -n "$VMID" ]; then
+            vim-cmd vmsvc/power.on "$VMID"
+          else
+            echo "VM not found: {{ item }}"
+          fi
         '
-      loop: "{{ vms }}"
+        loop: "{{ vms }}"
 
     # ------------------------------------------------------------
     # 6. WAIT FOR SSH (POST BOOT)
