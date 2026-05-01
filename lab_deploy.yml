@@ -101,7 +101,7 @@
             echo "VM not found: {{ item }}"
           fi
         '
-        loop: "{{ vms }}"
+      loop: "{{ vms }}"
 
     # ------------------------------------------------------------
     # 6. WAIT FOR SSH (POST BOOT)
