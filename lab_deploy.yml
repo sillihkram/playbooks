@@ -65,7 +65,6 @@
         scsi0.virtualDev = \"pvscsi\"
 
         scsi0:0.present = \"TRUE\"
-        scsi0:0.deviceType = \"scsi-hardDisk\"
         scsi0:0.fileName = \"{{ item }}.vmdk\"
 
         ethernet0.present = \"TRUE\"
