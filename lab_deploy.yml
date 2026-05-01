@@ -56,12 +56,15 @@
         config.version = \"8\"
         virtualHW.version = \"19\"
         displayName = \"{{ item }}\"
-        guestOS = \"rhel9-64\"  
+        guestOS = \"rhel9_64\"
 
         memsize = \"8192\"
         numvcpus = \"4\"
 
         scsi0.present = \"TRUE\"
+        scsi0.virtualDev = \"lsilogic\"
+
+        scsi0:0.present = \"TRUE\"
         scsi0:0.fileName = \"{{ item }}.vmdk\"
 
         ethernet0.present = \"TRUE\"
@@ -69,7 +72,6 @@
         ethernet0.addressType = \"generated\"
         
         svga.autodetect = \"TRUE\"
-        svga.present = \"TRUE\"
 
         EOF
         "
