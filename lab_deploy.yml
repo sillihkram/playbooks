@@ -56,21 +56,26 @@
         config.version = \"8\"
         virtualHW.version = \"19\"
         displayName = \"{{ item }}\"
-        guestOS = \"rhel9_64Guest\"
+        guestOS = \"rhel9-64\"  
 
         memsize = \"8192\"
         numvcpus = \"4\"
 
         scsi0.present = \"TRUE\"
         scsi0.virtualDev = \"lsilogic\"
-
         scsi0:0.present = \"TRUE\"
+        scsi0:0.deviceType = \"scsi-hardDisk\"
         scsi0:0.fileName = \"{{ item }}.vmdk\"
 
         ethernet0.present = \"TRUE\"
+        ethernet0.virtualDev = \"vmxnet3\"
         ethernet0.networkName = \"VM Network\"
         ethernet0.addressType = \"generated\"
+        
         svga.autodetect = \"TRUE\"
+        svga.present = \"TRUE\"
+        svga.guestBackedPrimaryAware = \"TRUE\"
+        svga.vramSize = \"16777216\"
 
         EOF
         "
