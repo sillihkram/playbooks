@@ -70,6 +70,7 @@
         ethernet0.present = \"TRUE\"
         ethernet0.networkName = \"VM Network\"
         ethernet0.addressType = \"generated\"
+        svga.autodetect = \"TRUE\"
 
         EOF
         "
