@@ -62,7 +62,6 @@
         numvcpus = \"4\"
 
         scsi0.present = \"TRUE\"
-        scsi0.virtualDev = \"lsilogic\"
         scsi0:0.present = \"TRUE\"
         scsi0:0.fileName = \"{{ item }}.vmdk\"
 
