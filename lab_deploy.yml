@@ -53,28 +53,44 @@
       ansible.builtin.shell: |
         sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} "
         cat > {{ base_path }}/{{ item }}/{{ item }}.vmx <<EOF
+        
+        # Hardware settings 
         config.version = \"8\"
         virtualHW.version = \"19\"
         vmci0.present = \"TRUE\"
         displayName = \"{{ item }}\"
         guestOS = \"rhel9_64\"
-
         memsize = \"8192\"
         numvcpus = \"4\"
 
+        # Pci settings
+        pciBridge0.present = \"TRUE\"
+        pciBridge4.present = \"TRUE\"
+        pciBridge4.virtualDev = \"pcieRootPort\"
+        pciBridge4.functions = \"8\"
+
+        # Scsi settings
         scsi0.present = \"TRUE\"
         scsi0.virtualDev = \"pvscsi\"
+        scsi0.pciSlotNumber = \"160\"
         scsi0:0.present = \"TRUE\"
         scsi0:0.fileName = \"{{ item }}.vmdk\"
-        csi0:0.deviceType = \"scsi-hardDisk\"
+        scsi0:0.deviceType = \"scsi-hardDisk\"       
 
-        # Network Card Settings (vmxnet3)
+        # Nic Settings (vmxnet3)
         ethernet0.present = \"TRUE\"
         ethernet0.virtualDev = \"vmxnet3\"
         ethernet0.startConnected = \"TRUE\"
         ethernet0.networkName = \"Bridged\"
         ethernet0.addressType = \"generated\"
+        
+        # Display settings
+        svga.present = \"TRUE\"
+        svga.vramSize = \"16777216\"
         svga.autodetect = \"TRUE\"
+
+        # Power Settings
+        powerType.powerOff = \"soft\"
         
         EOF
         "
