@@ -124,6 +124,15 @@
         '
       loop: "{{ vms }}"
 
+    - name: Get VM IPs from ESXi
+      ansible.builtin.shell: |
+        sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} "
+        VMID=\$(vim-cmd vmsvc/getallvms | grep '{{ item }}' | awk '{print \$1}')
+        vim-cmd vmsvc/get.guest \$VMID | grep ipAddress
+        "
+      register: vm_ips
+      loop: "{{ vms }}"
+
     # ------------------------------------------------------------
     # 6. WAIT FOR SSH (POST BOOT)
     # ------------------------------------------------------------
