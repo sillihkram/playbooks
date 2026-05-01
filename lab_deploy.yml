@@ -89,9 +89,11 @@
     # 5. POWER ON VMS
     # ------------------------------------------------------------
     - name: Power on VMs
-      ansible.builtin.shell: >
-        sshpass -p "{{ esxi_pass }}" ssh -o StrictHostKeyChecking=no {{ esxi_user }}@{{ esxi_host }}
-        "/bin/vim-cmd vmsvc/power.on \$(/bin/vim-cmd vmsvc/getallvms | awk '\$2 == \"{{ item }}\" {print \$1}')"
+      ansible.builtin.shell: |
+        sshpass -p "{{ esxi_password }}" ssh -o StrictHostKeyChecking=no {{ esxi_user }}@{{ esxi_host }} "
+          VMID=$(/bin/vim-cmd vmsvc/getallvms | awk '\$2 == \"{{ item }}\" {print \$1}' | head -n 1)
+          /bin/vim-cmd vmsvc/power.on \$VMID
+        "
       loop: "{{ vms }}"
 
     # ------------------------------------------------------------
