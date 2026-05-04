@@ -138,9 +138,9 @@
       register: vm_ips
 
     # ------------------------------------------------------------
-    # 7. GET IP ADDRESSES
+    # 7. Build IP map 
     # ------------------------------------------------------------
-    - name: Build vm_ips dictionary (cleaned)
+    - name: Build vm_ips dictionary
       ansible.builtin.set_fact:
         vm_ip_map: >-
           {{
@@ -159,7 +159,7 @@
     # ------------------------------------------------------------
     - name: Wait for SSH
       ansible.builtin.wait_for:
-        host: "{{ vm_ips_results[item] }}"
+        host: "{{ vm_ip_map[item] }}"
         port: 22
         timeout: 600
       loop: "{{ vms }}"
@@ -169,6 +169,6 @@
     # ------------------------------------------------------------
     - name: Set hostname inside guest
       ansible.builtin.shell: >
-        ssh -o StrictHostKeyChecking=no root@{{ vm_ips_results[item] }}
+        ssh -o StrictHostKeyChecking=no root@{{ vm_ip_map[item] }}
         "hostnamectl set-hostname {{ item }}"
       loop: "{{ vms }}"
