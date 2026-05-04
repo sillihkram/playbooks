@@ -140,14 +140,17 @@
     # ------------------------------------------------------------
     # 7. GET IP ADDRESSES
     # ------------------------------------------------------------
-    - name: Build vm_ips dictionary
+    - name: Build vm_ips dictionary (cleaned)
       ansible.builtin.set_fact:
-        vm_ips: "{{ vm_ips | default({}) | combine({ item.item: (item.stdout | trim) }) }}"
-      loop: "{{ vm_ips.results }}"
-
-    - name: DEBUG vm_ips
-      ansible.builtin.debug:
-        var: vm_ips
+        vm_ips: >-
+          {{
+            vm_ips | default({}) |
+            combine({
+              item.item:
+              (item.stdout | regex_search('([0-9]{1,3}\.){3}[0-9]{1,3}'))
+            })
+          }}
+      loop: "{{ vm_ip_results.results }}"
       
     # ------------------------------------------------------------
     # 8. SET HOSTNAMES
