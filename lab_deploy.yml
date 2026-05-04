@@ -135,32 +135,24 @@
         vim-cmd vmsvc/get.guest \$VMID | grep ipAddress
         "
       loop: "{{ vms }}"
-      register: vm_ips_results
+      register: vm_ips
 
     # ------------------------------------------------------------
     # 7. GET IP ADDRESSES
     # ------------------------------------------------------------
-    - name: Build vm_ips_results dictionary (cleaned)
-      ansible.builtin.set_fact:
-        vm_ips_results: >-
-          {{
-            dict(
-              vm_ip_results.results |
-              map(attribute='item') |
-              zip(
-                vm_ip_results.results |
-                map(attribute='stdout') |
-                map('regex_search', 'ipAddress = \"([0-9\\.]+)\"', '\\1')
-              )
+    - name: Build vm_ips dictionary (cleaned)
+    ansible.builtin.set_fact:
+      vm_ip_map: >-
+        {{
+          vm_ip_map | default({}) |
+          combine({
+            item.item: (
+              item.stdout
+              | regex_search('([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)')
             )
-          }}
-
-    # ------------------------------------------------------------
-    # 8. DEBUG (VERIFY THIS!)
-    # ------------------------------------------------------------
-    - name: DEBUG vm_ips_results
-      ansible.builtin.debug:
-        var: vm_ips_results
+          })
+        }}
+    loop: "{{ vm_ips.results }}"
       
     # ------------------------------------------------------------
     # 9. WAIT FOR SSH
