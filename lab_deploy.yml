@@ -137,6 +137,10 @@
       register: vm_ips
       loop: "{{ vms }}"
 
+    - name: DEBUG vm_ips
+      ansible.builtin.debug:
+        var: vm_ips
+
     # ------------------------------------------------------------
     # 7. GET IP ADDRESSES
     # ------------------------------------------------------------
@@ -161,10 +165,6 @@
         "hostnamectl set-hostname {{ item }}"
       loop: "{{ vms }}"
       when: vm_ips is defined and item in vm_ips
-
-    - name: DEBUG - vm_ips dictionary
-      ansible.builtin.debug:
-        var: vm_ip_results.results
         
     # ------------------------------------------------------------
     # 9. WAIT FOR SSH (POST BOOT)
