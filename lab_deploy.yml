@@ -131,11 +131,11 @@
     - name: Get VM IPs from ESXi
       ansible.builtin.shell: |
         sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} "
-        VMID=\$(vim-cmd vmsvc/getallvms | grep '{{ item }}' | awk '{print \$1}')
+        VMID=\$(vim-cmd vmsvc/getallvms | grep '{{ item }}' | awk '{print \$1}' | head -n 1)
         vim-cmd vmsvc/get.guest \$VMID | grep ipAddress
         "
-      register: vm_ips
       loop: "{{ vms }}"
+      register: vm_ips_results
 
     - name: DEBUG vm_ips
       ansible.builtin.debug:
@@ -148,31 +148,40 @@
       ansible.builtin.set_fact:
         vm_ips: >-
           {{
-            vm_ips | default({}) |
-            combine({
-              item.item:
-              (item.stdout | regex_search('([0-9]{1,3}\.){3}[0-9]{1,3}'))
-            })
+            dict(
+              vm_ip_results.results |
+              map(attribute='item') |
+              zip(
+                vm_ip_results.results |
+                map(attribute='stdout') |
+                map('regex_search', 'ipAddress = \"([0-9\\.]+)\"', '\\1')
+              )
+            )
           }}
       loop: "{{ vm_ips.results }}"
+
+    # ------------------------------------------------------------
+    # 8. DEBUG (VERIFY THIS!)
+    # ------------------------------------------------------------
+    - name: DEBUG vm_ips
+      ansible.builtin.debug:
+        var: vm_ips
       
     # ------------------------------------------------------------
-    # 8. SET HOSTNAMES
+    # 9. WAIT FOR SSH
     # ------------------------------------------------------------
-    - name: Set hostname inside guest
-      ansible.builtin.shell: |
-        ssh -o StrictHostKeyChecking=no root@{{ vm_ips[item] }} \
-        "hostnamectl set-hostname {{ item }}"
+    - name: Wait for SSH
+      ansible.builtin.wait_for:
+        host: "{{ vm_ips[item] }}"
+        port: 22
+        timeout: 600
       loop: "{{ vms }}"
-      when: vm_ips is defined and item in vm_ips
-        
+
     # ------------------------------------------------------------
-    # 9. WAIT FOR SSH (POST BOOT)
+    # 10. SET HOSTNAME
     # ------------------------------------------------------------
     - name: Set hostname inside guest
-      ansible.builtin.shell: hostnamectl set-hostname {{ item }}
-      vars:
-        ansible_host: "{{ vm_ips[item] }}"
-        ansible_password: "{{ vm_password }}"
-        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+      ansible.builtin.shell: >
+        ssh -o StrictHostKeyChecking=no root@{{ vm_ips[item] }}
+        "hostnamectl set-hostname {{ item }}"
       loop: "{{ vms }}"
