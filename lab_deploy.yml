@@ -59,7 +59,7 @@
         virtualHW.version = \"19\"
         vmci0.present = \"TRUE\"
         displayName = \"{{ item }}\"
-        guestOS = \"rhel9_64\"
+        guestOS = \"rhel9-64\"
         memsize = \"8192\"
         numvcpus = \"4\"
 
