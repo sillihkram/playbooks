@@ -136,7 +136,7 @@
     - name: DEBUG - raw VM IP results
       ansible.builtin.debug:
        var: vm_ip_results
-    - name: DEBUG - vm_ip_results loop structure
+    - name: DEBUG - vm_ip.results loop structure
       ansible.builtin.debug:
         msg:
           vm: "{{ item.item }}"
