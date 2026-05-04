@@ -80,8 +80,8 @@
         # Nic Settings (vmxnet3)
         ethernet0.present = \"TRUE\"
         ethernet0.virtualDev = \"vmxnet3\"
+        ethernet0.networkName = \"VM Network\"
         ethernet0.startConnected = \"TRUE\"
-        ethernet0.networkName = \"Bridged\"
         ethernet0.addressType = \"generated\"
         
         # Display settings
