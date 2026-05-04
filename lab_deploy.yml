@@ -145,9 +145,11 @@
     # ------------------------------------------------------------
     # 8. WAIT FOR SSH (POST BOOT)
     # ------------------------------------------------------------
-    - name: Wait for SSH
-      ansible.builtin.wait_for:
-        host: "{{ item }}"
-        port: 22
-        timeout: 900
-      loop: "{{ vm_ips }}"
+    - name: Set hostname inside guest
+      ansible.builtin.shell: hostnamectl set-hostname {{ item }}
+      vars:
+        ansible_host: "{{ vm_ips[item] }}"
+        ansible_user: root
+        ansible_password: "{{ vm_password }}"
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+      loop: "{{ vms }}"
