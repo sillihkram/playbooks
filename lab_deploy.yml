@@ -141,7 +141,7 @@
         msg:
           vm: "{{ item.item }}"
           stdout: "{{ item.stdout }}"
-      loop: "{{ vm_ip_results.results }}"
+      loop: "{{ vm_ips.results }}"
 
     # ------------------------------------------------------------
     # 7. GET IP ADDRESSES
@@ -149,7 +149,7 @@
     - name: Build vm_ips dictionary
       ansible.builtin.set_fact:
         vm_ips: "{{ vm_ips | default({}) | combine({ item.item: (item.stdout | trim) }) }}"
-      loop: "{{ vm_ip_results.results }}"
+      loop: "{{ vm_ips.results }}"
     # ------------------------------------------------------------
     # 8. SET HOSTNAMES
     # ------------------------------------------------------------
