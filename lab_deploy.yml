@@ -164,11 +164,15 @@
         timeout: 600
       loop: "{{ vms }}"
 
+    - debug:
+        msg: "VM={{ item }} IP={{ vm_ip_map[item] }}"
+      loop: "{{ vms }}"
+
     # ------------------------------------------------------------
     # 10. SET HOSTNAME
     # ------------------------------------------------------------
     - name: Set hostname inside guest
       ansible.builtin.shell: >
-        ssh -o StrictHostKeyChecking=no root@{{ vm_ip_map[item] }}
-        "hostnamectl set-hostname {{ item }}"
+        ssh -o StrictHostKeyChecking=no admin@{{ vm_ip_map[item] }}
+        "sudo hostnamectl set-hostname {{ item }}"
       loop: "{{ vms }}"
