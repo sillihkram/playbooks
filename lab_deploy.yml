@@ -140,6 +140,10 @@
       ansible.builtin.set_fact:
         vm_ips: "{{ vm_ips | default({}) | combine({ item.item: (item.stdout | trim) }) }}"
       loop: "{{ vm_ips.results }}"
+
+    - name: DEBUG vm_ips
+      ansible.builtin.debug:
+        var: vm_ips
       
     # ------------------------------------------------------------
     # 8. SET HOSTNAMES
@@ -149,11 +153,12 @@
         ssh -o StrictHostKeyChecking=no root@{{ vm_ips[item] }} \
         "hostnamectl set-hostname {{ item }}"
       loop: "{{ vms }}"
+      when: vm_ips is defined and item in vm_ips
 
     - name: DEBUG - vm_ips dictionary
       ansible.builtin.debug:
         var: vm_ip_results.results
-
+        
     # ------------------------------------------------------------
     # 9. WAIT FOR SSH (POST BOOT)
     # ------------------------------------------------------------
