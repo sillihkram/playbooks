@@ -134,7 +134,14 @@
       loop: "{{ vms }}"
 
     # ------------------------------------------------------------
-    # 7. SET HOSTNAMES
+    # 7. GET IP ADDRESSES
+    # ------------------------------------------------------------
+    - name: Build vm_ips dictionary
+      ansible.builtin.set_fact:
+        vm_ips: "{{ vm_ips | default({}) | combine({ item.item: (item.stdout | trim) }) }}"
+      loop: "{{ vm_ip_results.results }}"
+    # ------------------------------------------------------------
+    # 8. SET HOSTNAMES
     # ------------------------------------------------------------
     - name: Set hostname inside guest
       ansible.builtin.shell: |
@@ -143,13 +150,12 @@
       loop: "{{ vms }}"
 
     # ------------------------------------------------------------
-    # 8. WAIT FOR SSH (POST BOOT)
+    # 9. WAIT FOR SSH (POST BOOT)
     # ------------------------------------------------------------
     - name: Set hostname inside guest
       ansible.builtin.shell: hostnamectl set-hostname {{ item }}
       vars:
         ansible_host: "{{ vm_ips[item] }}"
-        ansible_user: root
         ansible_password: "{{ vm_password }}"
         ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
       loop: "{{ vms }}"
