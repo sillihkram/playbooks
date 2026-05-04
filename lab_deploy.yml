@@ -121,7 +121,7 @@
         '
       loop: "{{ vms }}"
 
-    - name: Wait for 30 seconds
+    - name: Wait for VMs to boot
       ansible.builtin.pause:
         seconds: 60
 
