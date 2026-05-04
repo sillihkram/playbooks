@@ -109,9 +109,6 @@
     # ------------------------------------------------------------
     # 5. POWER ON VMS
     # ------------------------------------------------------------
-    # ------------------------------------------------------------
-    # 5. POWER ON VMS (FIXED CLEAN)
-    # ------------------------------------------------------------
     - name: Power on VMs
       ansible.builtin.shell: |
         sshpass -p "{{ esxi_password }}" ssh -o StrictHostKeyChecking=no {{ esxi_user }}@{{ esxi_host }} '
@@ -124,6 +121,9 @@
         '
       loop: "{{ vms }}"
 
+    # ------------------------------------------------------------
+    # 6. GET IP ADDRESSES
+    # ------------------------------------------------------------
     - name: Get VM IPs from ESXi
       ansible.builtin.shell: |
         sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} "
@@ -134,11 +134,20 @@
       loop: "{{ vms }}"
 
     # ------------------------------------------------------------
-    # 6. WAIT FOR SSH (POST BOOT)
+    # 7. SET HOSTNAMES
+    # ------------------------------------------------------------
+    - name: Set hostname inside guest
+      ansible.builtin.shell: |
+        ssh -o StrictHostKeyChecking=no root@{{ vm_ips[item] }} \
+        "hostnamectl set-hostname {{ item }}"
+      loop: "{{ vms }}"
+
+    # ------------------------------------------------------------
+    # 8. WAIT FOR SSH (POST BOOT)
     # ------------------------------------------------------------
     - name: Wait for SSH
       ansible.builtin.wait_for:
-        host: "{{ item }}"
+        host: "{{ vm_ips[item] }}"
         port: 22
         timeout: 900
       loop: "{{ vms }}"
