@@ -141,18 +141,18 @@
     # 7. GET IP ADDRESSES
     # ------------------------------------------------------------
     - name: Build vm_ips dictionary (cleaned)
-    ansible.builtin.set_fact:
-      vm_ip_map: >-
-        {{
-          vm_ip_map | default({}) |
-          combine({
-            item.item: (
-              item.stdout
-              | regex_search('([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)')
-            )
-          })
-        }}
-    loop: "{{ vm_ips.results }}"
+      ansible.builtin.set_fact:
+        vm_ip_map: >-
+          {{
+            vm_ip_map | default({}) |
+            combine({
+              item.item: (
+                item.stdout
+                | regex_search('([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)')
+              )
+            })
+          }}
+      loop: "{{ vm_ips.results }}"
       
     # ------------------------------------------------------------
     # 9. WAIT FOR SSH
