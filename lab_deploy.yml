@@ -147,7 +147,7 @@
     # ------------------------------------------------------------
     - name: Wait for SSH
       ansible.builtin.wait_for:
-        host: "{{ vm_ips[item] }}"
+        host: "{{ item }}"
         port: 22
         timeout: 900
-      loop: "{{ vms }}"
+      loop: "{{ vm_ips }}"
