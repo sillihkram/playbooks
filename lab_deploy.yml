@@ -133,16 +133,6 @@
       register: vm_ips
       loop: "{{ vms }}"
 
-    - name: DEBUG - raw VM IP results
-      ansible.builtin.debug:
-       var: vm_ip_results
-    - name: DEBUG - vm_ip.results loop structure
-      ansible.builtin.debug:
-        msg:
-          vm: "{{ item.item }}"
-          stdout: "{{ item.stdout }}"
-      loop: "{{ vm_ips.results }}"
-
     # ------------------------------------------------------------
     # 7. GET IP ADDRESSES
     # ------------------------------------------------------------
@@ -150,6 +140,7 @@
       ansible.builtin.set_fact:
         vm_ips: "{{ vm_ips | default({}) | combine({ item.item: (item.stdout | trim) }) }}"
       loop: "{{ vm_ips.results }}"
+      
     # ------------------------------------------------------------
     # 8. SET HOSTNAMES
     # ------------------------------------------------------------
@@ -161,7 +152,7 @@
 
     - name: DEBUG - vm_ips dictionary
       ansible.builtin.debug:
-        var: vm_ips
+        var: vm_ip_results.results
 
     # ------------------------------------------------------------
     # 9. WAIT FOR SSH (POST BOOT)
