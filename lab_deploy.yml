@@ -149,10 +149,7 @@
           {{
             vm_ip_map | default({}) |
             combine({
-              item.item: (
-                item.stdout
-                | regex_search('([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)')
-              )
+              item.item: item.stdout | trim
             })
           }}
       loop: "{{ vm_ips.results }}"
