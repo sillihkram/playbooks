@@ -131,8 +131,11 @@
     - name: Get VM IPs from ESXi
       ansible.builtin.shell: |
         sshpass -p "{{ esxi_password }}" ssh {{ esxi_user }}@{{ esxi_host }} "
-        VMID=\$(vim-cmd vmsvc/getallvms | grep '{{ item }}' | awk '{print \$1}' | head -n 1)
-        vim-cmd vmsvc/get.guest \$VMID | grep ipAddress
+          VMID=\$(vim-cmd vmsvc/getallvms | grep '{{ item }}' | awk '{print \$1}' | head -n 1)
+          vim-cmd vmsvc/get.guest \$VMID \
+          | grep -oE '([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)' \
+          | grep -v '255\|0\.0\.0\.0' \
+          | head -n 1
         "
       loop: "{{ vms }}"
       register: vm_ips
