@@ -137,16 +137,12 @@
       loop: "{{ vms }}"
       register: vm_ips_results
 
-    - name: DEBUG vm_ips
-      ansible.builtin.debug:
-        var: vm_ips
-
     # ------------------------------------------------------------
     # 7. GET IP ADDRESSES
     # ------------------------------------------------------------
-    - name: Build vm_ips dictionary (cleaned)
+    - name: Build vm_ips_results dictionary (cleaned)
       ansible.builtin.set_fact:
-        vm_ips: >-
+        vm_ips_results: >-
           {{
             dict(
               vm_ip_results.results |
@@ -158,21 +154,20 @@
               )
             )
           }}
-      loop: "{{ vm_ips.results }}"
 
     # ------------------------------------------------------------
     # 8. DEBUG (VERIFY THIS!)
     # ------------------------------------------------------------
-    - name: DEBUG vm_ips
+    - name: DEBUG vm_ips_results
       ansible.builtin.debug:
-        var: vm_ips
+        var: vm_ips_results
       
     # ------------------------------------------------------------
     # 9. WAIT FOR SSH
     # ------------------------------------------------------------
     - name: Wait for SSH
       ansible.builtin.wait_for:
-        host: "{{ vm_ips[item] }}"
+        host: "{{ vm_ips_results[item] }}"
         port: 22
         timeout: 600
       loop: "{{ vms }}"
@@ -182,6 +177,6 @@
     # ------------------------------------------------------------
     - name: Set hostname inside guest
       ansible.builtin.shell: >
-        ssh -o StrictHostKeyChecking=no root@{{ vm_ips[item] }}
+        ssh -o StrictHostKeyChecking=no root@{{ vm_ips_results[item] }}
         "hostnamectl set-hostname {{ item }}"
       loop: "{{ vms }}"
