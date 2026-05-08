@@ -1,6 +1,6 @@
 ---
 - name: Apply kpatch for kernel vulnerability
-  hosts: localhost
+  hosts: all
   become: yes
 
   tasks:
