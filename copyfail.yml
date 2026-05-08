@@ -1,0 +1,49 @@
+---
+- name: Apply kpatch for kernel vulnerability
+  hosts: localhost
+  become: yes
+
+  tasks:
+    - name: Ensure kpatch package is installed
+      ansible.builtin.dnf:
+        name: kpatch
+        state: present
+
+    - name: Ensure kpatch-runtime package is installed (if not already)
+      ansible.builtin.dnf:
+        name: kpatch-runtime
+        state: present
+
+    - name: Check for available kpatch modules for the running kernel
+      ansible.builtin.command:
+        cmd: kpatch list
+      register: kpatch_list_output
+      changed_when: false
+
+    - name: Debug kpatch list output (optional)
+      ansible.builtin.debug:
+        var: kpatch_list_output.stdout_lines
+
+    - name: Search for and install the specific kpatch module for the CVE
+      ansible.builtin.dnf:
+        name: "kernel-livepatch-{{ ansible_kernel }}" # This is a common pattern for kpatch packages
+        state: present
+      when: "'kernel-livepatch-{{ ansible_kernel }}' not in kpatch_list_output.stdout"
+      # You might need to adjust the package name based on the specific CVE and kernel version.
+      # For a specific CVE like CVE-2026-31431, Red Hat would release a package
+      # similar to "kpatch-patch-CVE-2026-31431" or integrate it into a broader kernel livepatch.
+
+    - name: Apply the kpatch (if a new one was installed or updated)
+      ansible.builtin.command:
+        cmd: kpatch apply
+      # This command applies any available kpatches. You might need to target a specific
+      # patch if multiple are available and you only want to apply one.
+      # For a specific CVE, you might look for a command like:
+      # cmd: kpatch apply kpatch-patch-CVE-2026-31431
+      register: kpatch_apply_result
+      changed_when: "kpatch_apply_result.rc == 0 and 'already applied' not in kpatch_apply_result.stderr"
+      failed_when: "kpatch_apply_result.rc != 0 and 'already applied' not in kpatch_apply_result.stderr"
+
+    - name: Report kpatch application status
+      ansible.builtin.debug:
+        msg: "kpatch application result: {{ kpatch_apply_result.stdout }}"
