@@ -9,11 +9,6 @@
         name: kpatch
         state: present
 
-    - name: Ensure kpatch-runtime package is installed (if not already)
-      ansible.builtin.dnf:
-        name: kpatch-runtime
-        state: present
-
     - name: Check for available kpatch modules for the running kernel
       ansible.builtin.command:
         cmd: kpatch list
