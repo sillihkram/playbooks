@@ -1,0 +1,93 @@
+---
+- name: Complete Teardown - Drop Table and Uninstall Oracle Database
+  hosts: oracle_servers
+  become: true
+
+  vars:
+    oracle_sid: "ORCLCDB"
+    oracle_home: "/opt/oracle/product/19c/dbhome_1"
+    oracle_base: "/opt/oracle"
+
+  tasks:
+    # ---------------------------------------------------------
+    # 1. DROP DATABASE TABLE
+    # ---------------------------------------------------------
+    - name: Drop INVENTORY_HOSTS table from Oracle
+      ansible.builtin.shell: |
+        sqlplus -s / as sysdba << 'EOF'
+        SET FEEDBACK OFF;
+        BEGIN
+          EXECUTE IMMEDIATE 'DROP TABLE inventory_hosts PURGE';
+        EXCEPTION
+          WHEN OTHERS THEN
+            IF SQLCODE != -942 THEN  -- Ignore if table does not exist
+              RAISE;
+            END IF;
+        END;
+        /
+        EXIT;
+        EOF
+      args:
+        executable: /bin/bash
+      environment:
+        ORACLE_HOME: "{{ oracle_home }}"
+        ORACLE_SID: "{{ oracle_sid }}"
+        PATH: "{{ oracle_home }}/bin:{{ ansible_env.PATH }}"
+      become_user: oracle
+      ignore_errors: true  # Continue even if DB is down or table is already gone
+
+    # ---------------------------------------------------------
+    # 2. STOP AND DISABLE SERVICE
+    # ---------------------------------------------------------
+    - name: Stop and disable Oracle Database systemd service
+      ansible.builtin.systemd:
+        name: "oracledb_{{ oracle_sid }}-19c"
+        state: stopped
+        enabled: false
+      ignore_errors: true
+
+    # ---------------------------------------------------------
+    # 3. UNINSTALL RPM PACKAGES
+    # ---------------------------------------------------------
+    - name: Remove Oracle Database and Preinstall RPMs via DNF
+      ansible.builtin.dnf:
+        name:
+          - "oracle-database-ee-19c"
+          - "oracle-database-preinstall-19c"
+        state: absent
+
+    # ---------------------------------------------------------
+    # 4. REMOVE DIRECTORIES & CONFIG FILES
+    # ---------------------------------------------------------
+    - name: Clean up Oracle installation directories and system config files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ oracle_base }}"
+        - /etc/oratab
+        - /etc/oraInst.loc
+        - /etc/orc.key
+        - /etc/init.d/oracledb_*
+        - /tmp/oracle-database-ee-19c-1.0-1.x86_64.rpm
+
+    # ---------------------------------------------------------
+    # 5. REMOVE ORACLE USER AND GROUPS
+    # ---------------------------------------------------------
+    - name: Remove oracle user and home directory
+      ansible.builtin.user:
+        name: oracle
+        state: absent
+        remove: true
+        force: true
+      ignore_errors: true
+
+    - name: Remove Oracle system groups
+      ansible.builtin.group:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - dba
+        - oinstall
+        - oper
+      ignore_errors: true
