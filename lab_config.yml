@@ -21,8 +21,8 @@
     - name: Register
       community.general.redhat_subscription:
         state: present
-        username: "scm__username"
-        password: "scm_password"
+        username: "rh_user"
+        password: "rh_pass"
         force_register: true
 
     # Once registered, you can enable specific repositories
@@ -36,3 +36,5 @@
 #      ansible.builtin.dnf:
 #        name: "*"
 #        state: latest
+#      vars:
+#        rhc_state: "{{ force_rhc_reconnect | default('present') }}"
