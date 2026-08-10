@@ -6,7 +6,6 @@
   vars:
     rh_activation_key: "Production_AZ"
     rh_org_id: "11972456"
-    rhc_state: "{{ force_rhc_reconnect | default('present') }}"
 
   tasks:
     # Register with activation key: 
@@ -21,8 +20,8 @@
     - name: Register
       community.general.redhat_subscription:
         state: present
-        username: "rh_user"
-        password: "rh_pass"
+        username: "{{ rh_user }}"
+        password: "{{ rh_pass }}"
         force_register: true
 
     # Once registered, you can enable specific repositories
