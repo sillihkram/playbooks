@@ -1,6 +1,6 @@
 ---
 - name: Complete Teardown - Drop Table and Uninstall Oracle Database
-  hosts: oracle_servers
+  hosts: all
   become: true
 
   vars:
