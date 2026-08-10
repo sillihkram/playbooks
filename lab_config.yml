@@ -9,7 +9,7 @@
 
   tasks:
     # Register with activation key: 
-    - name: Ensure the system is registered to Red Hat
+    - name: Register hosts using activation key
       community.general.redhat_subscription:
         state: present
         activationkey: "{{ rh_activation_key }}"
@@ -17,7 +17,7 @@
         force_register: true
 
     # Register with usr/pass:
-    - name: Register
+    - name: Register hosts usinf user/password
       community.general.redhat_subscription:
         state: present
         username: "{{ rh_user }}"
@@ -29,6 +29,15 @@
       community.general.rhsm_repository:
         name: rhel-9-for-x86_64-appstream-rpms
         state: enabled
+
+    - name: Run dnf repolist
+      ansible.builtin.command: dnf repolist
+      register: dnf_repo_output
+      changed_when: false
+
+    - name: Display enabled dnf repositories
+      ansible.builtin.debug:
+        msg: "{{ dnf_repo_output.stdout_lines }}"
 
 #    # Run a package update to verify connectivity
 #    - name: Upgrade all packages
