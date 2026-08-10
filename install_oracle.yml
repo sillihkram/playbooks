@@ -1,0 +1,105 @@
+---
+# ---------------------------------------------------------
+# PLAY 1: Gather facts from all hosts in the inventory
+# ---------------------------------------------------------
+- name: Gather facts from all target hosts
+  hosts: all
+  gather_facts: true
+
+# ---------------------------------------------------------
+# PLAY 2: Populate Oracle DB on the database server
+# ---------------------------------------------------------
+- name: Populate Oracle Database with Inventory Facts
+  hosts: oracle_servers  # Change to your DB host group name
+  become: true
+  become_user: oracle   # Executes sqlplus as the oracle system user
+
+  vars:
+    oracle_home: "/opt/oracle/product/19c/dbhome_1"
+    oracle_sid: "ORCLCDB"
+
+  environment:
+    ORACLE_HOME: "{{ oracle_home }}"
+    ORACLE_SID: "{{ oracle_sid }}"
+    PATH: "{{ oracle_home }}/bin:{{ ansible_env.PATH }}"
+
+  tasks:
+    # 1. Create the destination table if it doesn't already exist
+    - name: Ensure inventory_hosts table exists in Oracle
+      ansible.builtin.shell: |
+        sqlplus -s / as sysdba << 'EOF'
+        SET FEEDBACK OFF;
+        DECLARE
+          v_count NUMBER;
+        BEGIN
+          SELECT COUNT(*) INTO v_count FROM user_tables WHERE table_name = 'INVENTORY_HOSTS';
+          IF v_count = 0 THEN
+            EXECUTE IMMEDIATE '
+              CREATE TABLE inventory_hosts (
+                hostname VARCHAR2(100) PRIMARY KEY,
+                ip_address VARCHAR2(45),
+                netmask VARCHAR2(45),
+                os_version VARCHAR2(100),
+                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+              )';
+          END IF;
+        END;
+        /
+        EXIT;
+        EOF
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    # 2. Insert or update (MERGE) host details using a Jinja2 template loop
+    - name: Insert inventory host facts into Oracle Database
+      ansible.builtin.shell: |
+        sqlplus -s / as sysdba << 'EOF'
+        SET FEEDBACK OFF;
+        {% for host in groups['all'] %}
+        MERGE INTO inventory_hosts target
+        USING (SELECT '{{ hostvars[host].ansible_hostname | default(host) }}' AS hostname FROM dual) src
+        ON (target.hostname = src.hostname)
+        WHEN MATCHED THEN
+          UPDATE SET 
+            ip_address   = '{{ hostvars[host].ansible_default_ipv4.address | default("N/A") }}',
+            netmask      = '{{ hostvars[host].ansible_default_ipv4.netmask | default("N/A") }}',
+            os_version   = '{{ hostvars[host].ansible_distribution | default("RHEL") }} {{ hostvars[host].ansible_distribution_version | default("") }}',
+            last_updated = CURRENT_TIMESTAMP
+        WHEN NOT MATCHED THEN
+          INSERT (hostname, ip_address, netmask, os_version)
+          VALUES (
+            '{{ hostvars[host].ansible_hostname | default(host) }}',
+            '{{ hostvars[host].ansible_default_ipv4.address | default("N/A") }}',
+            '{{ hostvars[host].ansible_default_ipv4.netmask | default("N/A") }}',
+            '{{ hostvars[host].ansible_distribution | default("RHEL") }} {{ hostvars[host].ansible_distribution_version | default("") }}'
+          );
+        {% endfor %}
+        COMMIT;
+        EXIT;
+        EOF
+      args:
+        executable: /bin/bash
+      register: sql_output
+
+    # 3. Display table contents in AAP output to verify
+    - name: Query and display populated database records
+      ansible.builtin.shell: |
+        sqlplus -s / as sysdba << 'EOF'
+        SET PAGESIZE 50;
+        SET LINESIZE 150;
+        COLUMN hostname FORMAT A25;
+        COLUMN ip_address FORMAT A18;
+        COLUMN netmask FORMAT A18;
+        COLUMN os_version FORMAT A25;
+        SELECT hostname, ip_address, netmask, os_version FROM inventory_hosts;
+        EXIT;
+        EOF
+      args:
+        executable: /bin/bash
+      register: db_check
+      changed_when: false
+
+    - name: Print Database Contents
+      ansible.builtin.debug:
+        msg: "{{ db_check.stdout_lines }}"
