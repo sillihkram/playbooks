@@ -1,8 +1,17 @@
 ---
+# ---------------------------------------------------------
+# PLAY 1: Gather facts from ALL hosts in the inventory
+# ---------------------------------------------------------
+- name: Gather facts from all target hosts
+  hosts: all
+  gather_facts: true
+
+# ---------------------------------------------------------
+# PLAY 2: Populate Oracle DB on the database server ONLY
+# ---------------------------------------------------------
 - name: Populate Oracle Database with Inventory Facts
-  hosts: all  # Change to your DB host group name
+  hosts: all  
   become: true
-  become_user: oracle   # Executes sqlplus as the oracle system user
 
   vars:
     oracle_home: "/opt/oracle/product/19c/dbhome_1"
@@ -39,6 +48,7 @@
         EOF
       args:
         executable: /bin/bash
+      become_user: oracle  # Switch to oracle user specifically for sqlplus
       changed_when: false
 
     # 2. Insert or update (MERGE) host details using a Jinja2 template loop
@@ -70,6 +80,7 @@
         EOF
       args:
         executable: /bin/bash
+      become_user: oracle  # Switch to oracle user specifically for sqlplus
       register: sql_output
 
     # 3. Display table contents in AAP output to verify
@@ -87,6 +98,7 @@
         EOF
       args:
         executable: /bin/bash
+      become_user: oracle  # Switch to oracle user specifically for sqlplus
       register: db_check
       changed_when: false
 
