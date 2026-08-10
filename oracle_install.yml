@@ -1,16 +1,6 @@
 ---
-# ---------------------------------------------------------
-# PLAY 1: Gather facts from all hosts in the inventory
-# ---------------------------------------------------------
-- name: Gather facts from all target hosts
-  hosts: all
-  gather_facts: true
-
-# ---------------------------------------------------------
-# PLAY 2: Populate Oracle DB on the database server
-# ---------------------------------------------------------
 - name: Populate Oracle Database with Inventory Facts
-  hosts: oracle_servers  # Change to your DB host group name
+  hosts: all  # Change to your DB host group name
   become: true
   become_user: oracle   # Executes sqlplus as the oracle system user
 
