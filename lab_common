@@ -1,0 +1,38 @@
+---
+- name: Register RHEL 9 Host with Red Hat Subscription Manager
+  hosts: all
+  become: true
+
+  vars:
+    rh_activation_key: "Production_AZ"
+    rh_org_id: "11972456"
+    rhc_state: "{{ force_rhc_reconnect | default('present') }}"
+
+  tasks:
+    # Register with activation key: 
+    - name: Ensure the system is registered to Red Hat
+      community.general.redhat_subscription:
+        state: present
+        activationkey: "{{ rh_activation_key }}"
+        org_id: "{{ rh_org_id }}"
+        force_register: true
+
+    # Register with usr/pass:
+    - name: Register
+      community.general.redhat_subscription:
+        state: present
+        username: "scm__username"
+        password: "scm_password"
+        force_register: true
+
+    # Once registered, you can enable specific repositories
+    - name: Enable the RHEL 9 AppStream repository
+      community.general.rhsm_repository:
+        name: rhel-9-for-x86_64-appstream-rpms
+        state: enabled
+
+#    # Run a package update to verify connectivity
+#    - name: Upgrade all packages
+#      ansible.builtin.dnf:
+#        name: "*"
+#        state: latest
