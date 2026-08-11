@@ -1,54 +1,82 @@
 ---
-- name: Install Oracle Database 19c on RHEL 9
-  hosts: shaula.openincite.net
+- name: Install and Configure Oracle Database 19c via Local RPM on RHEL 9
+  hosts: all
   become: true
 
   vars:
     oracle_sid: "ORCLCDB"
     oracle_home: "/opt/oracle/product/19c/dbhome_1"
     
-    # Official Oracle Pre-install RPM URL for RHEL 9
+    # Official Oracle Pre-install RPM URL (this one IS in the public repo)
     oracle_preinstall_rpm: "https://yum.oracle.com/repo/OracleLinux/OL9/appstream/x86_64/getPackage/oracle-database-preinstall-19c-1.0-2.el9.x86_64.rpm"
+
+    # Staging path where your downloaded oracle-database-ee-19c RPM is placed
+    oracle_rpm_path: "/opt/oracle_stage"
 
   tasks:
     # ---------------------------------------------------------
-    # 1. PREREQUISITES & AUTOMATIC USER CREATION
+    # 1. PREPARE STAGING & REPOSITORIES
     # ---------------------------------------------------------
-    - name: Enable CodeReady Builder (CRB) repository
+    - name: Ensure Oracle staging directory exists
+      ansible.builtin.file:
+        path: "{{ oracle_rpm_path }}"
+        state: directory
+        mode: '0755'
+
+    - name: Enable RHEL 9 CodeReady Builder (CRB) repository
       community.general.rhsm_repository:
         name: rhel-9-for-x86_64-codeready-builder-rpms
         state: enabled
 
-    - name: Install EPEL Repository
-      ansible.builtin.dnf:
-        name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm"
-        state: present
-        disable_gpg_check: true
-
-    - name: Install Oracle Pre-installation RPM (CREATES ORACLE USER & GROUPS)
+    - name: Install Oracle Pre-installation RPM (creates oracle user & kernel limits)
       ansible.builtin.dnf:
         name: "{{ oracle_preinstall_rpm }}"
         state: present
         disable_gpg_check: true
 
     # ---------------------------------------------------------
-    # 2. INSTALL ORACLE DATABASE RPM
+    # 2. FIND & INSTALL LOCAL ORACLE DATABASE RPM
     # ---------------------------------------------------------
-    # Note: Ensure your Oracle EE/Free RPM is staged on shaula at /tmp
-    - name: Install Oracle Database RPM package
+    - name: Locate local Oracle Database Enterprise Edition RPM
+      ansible.builtin.find:
+        paths: "{{ oracle_rpm_path }}"
+        patterns: "oracle-database-ee-19c-*.rpm"
+      register: found_rpm
+
+    - name: Fail if the RPM hasn't been copied to staging yet
+      ansible.builtin.fail:
+        msg: "Please place oracle-database-ee-19c-*.rpm inside {{ oracle_rpm_path }} on shaula."
+      when: found_rpm.matched == 0
+
+    - name: Install local Oracle Database RPM package via DNF
       ansible.builtin.dnf:
-        name: "/tmp/oracle-database-ee-19c-1.0-1.x86_64.rpm"
+        name: "{{ found_rpm.files[0].path }}"
         state: present
+        disable_gpg_check: true
 
     # ---------------------------------------------------------
-    # 3. INITIALIZE & START DATABASE
+    # 3. INITIALIZE DATABASE & START SERVICE
     # ---------------------------------------------------------
-    - name: Configure Oracle Database instance
+    - name: Configure Oracle Database instance (Runs initialization script)
       ansible.builtin.command: "/etc/init.d/oracledb_{{ oracle_sid }}-19c configure"
       args:
-        creates: "/etc/orc.key"
+        creates: "/etc/orc.key" # Idempotency check
 
-    - name: Ensure Oracle Database service is running
+    - name: Configure oracle user environment variables (.bash_profile)
+      ansible.builtin.blockinfile:
+        path: /home/oracle/.bash_profile
+        create: true
+        owner: oracle
+        group: oinstall
+        mode: '0644'
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - ORACLE ENV"
+        block: |
+          export ORACLE_BASE=/opt/oracle
+          export ORACLE_HOME={{ oracle_home }}
+          export ORACLE_SID={{ oracle_sid }}
+          export PATH=$PATH:$ORACLE_HOME/bin
+
+    - name: Ensure Oracle Database service is enabled and started
       ansible.builtin.systemd:
         name: "oracledb_{{ oracle_sid }}-19c"
         enabled: true
