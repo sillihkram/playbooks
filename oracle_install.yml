@@ -65,7 +65,7 @@
         creates: "/etc/orc.key" 
       environment:
         # Trick the 19c installer into recognizing the OS
-        CV_ASSUME_DISTID: "OEL8"
+        CV_ASSUME_DISTID: "OEL9"
         # Reroute temp files away from the noexec /tmp mount
         TMP: "/opt/oracle_stage/tmp"
         TMPDIR: "/opt/oracle_stage/tmp"
