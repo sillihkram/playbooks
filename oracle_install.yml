@@ -1,5 +1,5 @@
 ---
-- name: Install and Configure Oracle Database 19c via Local RPM on RHEL 9
+- name: Install and Configure Oracle Database 19c via Internal RPM on RHEL 9
   hosts: all
   become: true
 
@@ -7,11 +7,10 @@
     oracle_sid: "ORCLCDB"
     oracle_home: "/opt/oracle/product/19c/dbhome_1"
     
-    # Official Oracle Pre-install RPM URL (this one IS in the public repo)
+    # Repositories & URLs
     oracle_preinstall_rpm: "https://yum.oracle.com/repo/OracleLinux/OL9/appstream/x86_64/getPackage/oracle-database-preinstall-19c-1.0-2.el9.x86_64.rpm"
-
-    # Staging path where your downloaded oracle-database-ee-19c RPM is placed
-    oracle_rpm_path: "/opt/oracle_stage"
+    oracle_internal_rpm_url: "http://192.168.1.221:8080/oracle-database-ee-19c-1.0-1.x86_64.rpm"
+    oracle_rpm_dest: "/opt/oracle_stage/oracle-database-ee-19c-1.0-1.x86_64.rpm"
 
   tasks:
     # ---------------------------------------------------------
@@ -19,7 +18,7 @@
     # ---------------------------------------------------------
     - name: Ensure Oracle staging directory exists
       ansible.builtin.file:
-        path: "{{ oracle_rpm_path }}"
+        path: "/opt/oracle_stage"
         state: directory
         mode: '0755'
 
@@ -35,22 +34,19 @@
         disable_gpg_check: true
 
     # ---------------------------------------------------------
-    # 2. FIND & INSTALL LOCAL ORACLE DATABASE RPM
+    # 2. DOWNLOAD & INSTALL ORACLE DATABASE RPM
     # ---------------------------------------------------------
-    - name: Locate local Oracle Database Enterprise Edition RPM
-      ansible.builtin.find:
-        paths: "{{ oracle_rpm_path }}"
-        patterns: "oracle-database-ee-19c-*.rpm"
-      register: found_rpm
-
-    - name: Fail if the RPM hasn't been copied to staging yet
-      ansible.builtin.fail:
-        msg: "Please place oracle-database-ee-19c-*.rpm inside {{ oracle_rpm_path }} on shaula."
-      when: found_rpm.matched == 0
+    - name: Download Oracle 19c RPM from internal server
+      ansible.builtin.get_url:
+        url: "{{ oracle_internal_rpm_url }}"
+        dest: "{{ oracle_rpm_dest }}"
+        mode: '0644'
+      # Note: This is a 2.5GB file, so this task will take a few minutes to complete 
+      # depending on your internal network speed.
 
     - name: Install local Oracle Database RPM package via DNF
       ansible.builtin.dnf:
-        name: "{{ found_rpm.files[0].path }}"
+        name: "{{ oracle_rpm_dest }}"
         state: present
         disable_gpg_check: true
 
@@ -60,7 +56,7 @@
     - name: Configure Oracle Database instance (Runs initialization script)
       ansible.builtin.command: "/etc/init.d/oracledb_{{ oracle_sid }}-19c configure"
       args:
-        creates: "/etc/orc.key" # Idempotency check
+        creates: "/etc/orc.key" # Ensures this massive step only runs once
 
     - name: Configure oracle user environment variables (.bash_profile)
       ansible.builtin.blockinfile:
