@@ -25,7 +25,7 @@
 
     - name: Enable RHEL 9 CodeReady Builder (CRB) repository
       community.general.rhsm_repository:
-        name: rhel-9-for-x86_64-codeready-builder-rpms
+        name: codeready-builder-for-rhel-9-x86_64-rpms
         state: enabled
 
     - name: Install Oracle Pre-installation RPM (creates oracle user & kernel limits)
