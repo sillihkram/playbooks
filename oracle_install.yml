@@ -50,13 +50,25 @@
         state: present
         disable_gpg_check: true
 
-    # ---------------------------------------------------------
+# ---------------------------------------------------------
     # 3. INITIALIZE DATABASE & START SERVICE
     # ---------------------------------------------------------
+    - name: Create an executable temporary directory for Oracle DBCA
+      ansible.builtin.file:
+        path: "/opt/oracle_stage/tmp"
+        state: directory
+        mode: '1777'
+
     - name: Configure Oracle Database instance (Runs initialization script)
       ansible.builtin.command: "/etc/init.d/oracledb_{{ oracle_sid }}-19c configure"
       args:
-        creates: "/etc/orc.key" # Ensures this massive step only runs once
+        creates: "/etc/orc.key" 
+      environment:
+        # Trick the 19c installer into recognizing the OS
+        CV_ASSUME_DISTID: "OEL8"
+        # Reroute temp files away from the noexec /tmp mount
+        TMP: "/opt/oracle_stage/tmp"
+        TMPDIR: "/opt/oracle_stage/tmp"
 
     - name: Configure oracle user environment variables (.bash_profile)
       ansible.builtin.blockinfile:
