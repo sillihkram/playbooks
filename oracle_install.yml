@@ -1,0 +1,55 @@
+---
+- name: Install Oracle Database 19c on RHEL 9
+  hosts: shaula.openincite.net
+  become: true
+
+  vars:
+    oracle_sid: "ORCLCDB"
+    oracle_home: "/opt/oracle/product/19c/dbhome_1"
+    
+    # Official Oracle Pre-install RPM URL for RHEL 9
+    oracle_preinstall_rpm: "https://yum.oracle.com/repo/OracleLinux/OL9/appstream/x86_64/getPackage/oracle-database-preinstall-19c-1.0-2.el9.x86_64.rpm"
+
+  tasks:
+    # ---------------------------------------------------------
+    # 1. PREREQUISITES & AUTOMATIC USER CREATION
+    # ---------------------------------------------------------
+    - name: Enable CodeReady Builder (CRB) repository
+      community.general.rhsm_repository:
+        name: rhel-9-for-x86_64-codeready-builder-rpms
+        state: enabled
+
+    - name: Install EPEL Repository
+      ansible.builtin.dnf:
+        name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm"
+        state: present
+        disable_gpg_check: true
+
+    - name: Install Oracle Pre-installation RPM (CREATES ORACLE USER & GROUPS)
+      ansible.builtin.dnf:
+        name: "{{ oracle_preinstall_rpm }}"
+        state: present
+        disable_gpg_check: true
+
+    # ---------------------------------------------------------
+    # 2. INSTALL ORACLE DATABASE RPM
+    # ---------------------------------------------------------
+    # Note: Ensure your Oracle EE/Free RPM is staged on shaula at /tmp
+    - name: Install Oracle Database RPM package
+      ansible.builtin.dnf:
+        name: "/tmp/oracle-database-ee-19c-1.0-1.x86_64.rpm"
+        state: present
+
+    # ---------------------------------------------------------
+    # 3. INITIALIZE & START DATABASE
+    # ---------------------------------------------------------
+    - name: Configure Oracle Database instance
+      ansible.builtin.command: "/etc/init.d/oracledb_{{ oracle_sid }}-19c configure"
+      args:
+        creates: "/etc/orc.key"
+
+    - name: Ensure Oracle Database service is running
+      ansible.builtin.systemd:
+        name: "oracledb_{{ oracle_sid }}-19c"
+        enabled: true
+        state: started
