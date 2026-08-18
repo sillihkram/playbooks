@@ -39,6 +39,67 @@
       ansible.builtin.debug:
         msg: "{{ dnf_repo_output.stdout_lines }}"
 
+    - name: Check if the custom banner already exists
+      ansible.builtin.stat:
+        path: /etc/motd.d/custom-banner
+      register: motd_file
+
+    - name: Temporary tools installation and MOTD generation
+      when: not motd_file.stat.exists
+      block:
+        - name: Import EPEL GPG key
+          ansible.builtin.rpm_key:
+            state: present
+            key: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9
+
+        - name: Install EPEL release for RHEL 9
+          ansible.builtin.dnf:
+            name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+            state: present
+            disable_gpg_check: false # GPG check is now safely enabled
+
+        - name: Install required packages
+          ansible.builtin.dnf:
+            name:
+              - figlet
+              - icat
+              - redhat-logos
+            state: present
+            enablerepo: epel
+
+        - name: Generate the custom banner to a secure temporary location
+          ansible.builtin.shell: |
+            icat /usr/share/icons/hicolor/24x24/apps/system-logo-icon.png > /root/custom-banner
+            hostname -s | figlet -f slant >> /root/custom-banner
+
+        - name: Place banner in motd.d with correct system permissions
+          ansible.builtin.copy:
+            src: /root/custom-banner
+            dest: /etc/motd.d/custom-banner
+            remote_src: true
+            owner: root
+            group: root
+            mode: '0644'
+            setype: etc_t # Explicitly sets correct SELinux context
+
+      always:
+        - name: Remove temporary EPEL packages
+          ansible.builtin.dnf:
+            name:
+              - figlet
+              - icat
+            state: absent
+
+        - name: Remove EPEL repository
+          ansible.builtin.dnf:
+            name: epel-release
+            state: absent
+
+        - name: Clean up staged banner file
+          ansible.builtin.file:
+            path: /root/custom-banner
+            state: absent
+
 #    # Run a package update to verify connectivity
 #    - name: Upgrade all packages
 #      ansible.builtin.dnf:
