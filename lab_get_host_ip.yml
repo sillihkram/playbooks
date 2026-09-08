@@ -1,0 +1,45 @@
+---
+- name: Query VM IP Addresses from ESXi Host
+  hosts: all
+  gather_facts: false
+  vars:
+    ansible_user: "root"
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+
+    # The VMs you want to extract IPs for
+    target_vms:
+      - graffias.openincite.net
+      - acrab.openincite.net
+      - jabbah.openincite.net
+      - alniyat.openincite.net
+      - apollyon.openincite.net
+      - shaula.openincite.net
+      - lesath.openincite.net
+
+  tasks:
+    - name: Fetch VM inventory ID and guest IP from ESXi
+      ansible.builtin.shell: |
+        # Look up VMID by VM display name
+        VM_ID=$(vim-cmd vmsvc/getallvms | awk -v name="{{ item }}" '$2 == name {print $1}')
+        if [ -n "$VM_ID" ]; then
+          # Extract the primary guest IP reported by VMware Tools
+          vim-cmd vmsvc/get.guest "$VM_ID" | grep -m 1 'ipAddress = "' | awk -F '"' '{print $2}'
+        fi
+      loop: "{{ target_vms }}"
+      register: vm_ip_results
+      changed_when: false
+
+    - name: Format entries into hosts file format
+      ansible.builtin.set_fact:
+        hosts_entries: >-
+          {{
+            hosts_entries | default([]) + [
+              (item.stdout | trim) ~ "    " ~ item.item ~ "    " ~ (item.item.split('.'))
+            ]
+          }}
+      loop: "{{ vm_ip_results.results }}"
+      when: item.stdout | trim != ""
+
+    - name: Display /etc/hosts entries
+      ansible.builtin.debug:
+        msg: "{{ hosts_entries | default([]) | join('\n') }}"
