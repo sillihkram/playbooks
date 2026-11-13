@@ -37,4 +37,5 @@
       changed_when: false
 
   roles:
-    - role: rhel-system-roles.cockpit
+    # Uses the Fully Qualified Collection Name (FQCN) for AAP consumption
+    - role: redhat.rhel_system_roles.cockpit
