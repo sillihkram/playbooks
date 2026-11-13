@@ -1,0 +1,40 @@
+---
+- name: Deploy Cockpit and plugins on CIS Compliant RHEL Hosts
+  hosts: all
+  become: true
+  
+  vars:
+    # Bypass noexec on /tmp and /var/tmp by defining an alternative executable temp directory
+    ansible_remote_tmp: /opt/ansible/tmp
+    
+    # RHEL System Roles Cockpit Variables
+    cockpit_manage_firewall: true
+    cockpit_manage_selinux: true
+    cockpit_enabled: true
+    cockpit_started: true
+    
+    # Explicitly list all official RHEL Cockpit plugins (No EPEL required)
+    cockpit_packages:
+      - cockpit
+      - cockpit-storaged            # Storage management
+      - cockpit-podman              # Container management
+      - cockpit-machines            # Virtual machine management (KVM/libvirt)
+      - cockpit-pcp                 # Performance Co-Pilot metrics integration
+      - cockpit-session-recording   # Session recording management
+      - cockpit-composer            # Image Builder for custom OS images
+      - cockpit-networkmanager      # Network configuration
+      - cockpit-packagekit          # Software updates 
+      - cockpit-selinux             # SELinux troubleshooting tools
+      - cockpit-kdump               # Kernel crash dump configuration
+      - cockpit-sosreport           # Diagnostic reports
+      # - cockpit-files             # Note: Uncomment if running RHEL 9+ (File manager)
+
+  pre_tasks:
+    # Use the 'raw' module to bypass Python module execution requirements.
+    # This bootstraps the temporary directory so standard Ansible modules can function.
+    - name: Ensure the custom Ansible remote_tmp directory exists with correct permissions
+      ansible.builtin.raw: mkdir -p /opt/ansible/tmp && chmod 1777 /opt/ansible/tmp
+      changed_when: false
+
+  roles:
+    - role: rhel-system-roles.cockpit
